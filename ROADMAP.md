@@ -17,7 +17,7 @@ Légende : ✅ livré et testé · 🟡 partiel, à renforcer · ⬜ optionnel /
 | Dossier complet `C:\FREESTREAM\` | ✅ | `outils/exporter.mjs --dest C:\FREESTREAM` |
 | `DEMARRER.bat` (Node / Python / mode dossier) | ✅ | 3 branches de repli, testées |
 | `DEMARRER.sh` (macOS / Linux) | ✅ | — |
-| Serveur Node zéro dépendance | ✅ | `tests/http.test.mjs` 23/23 |
+| Serveur Node zéro dépendance | ✅ | `tests/http.test.mjs` 27/27 |
 | Serveur Python de repli (bibliothèque standard) | ✅ | santé, pages, patch, Range, upload, sécurité |
 | **Mode dossier sans aucune installation** | ✅ | API File System Access → `live.js` |
 | `LISEZ-MOI.txt`, `VERSION.txt`, `README.md` | ✅ | — |
@@ -97,12 +97,13 @@ clic droit, loupe 1:1 sur les aperçus.
 |---|---|
 | `tests/unit.test.mjs` | ✅ 66/66 |
 | `tests/render.test.mjs` | ✅ 18/18 |
+| `tests/launcher.test.mjs` | ✅ 10/10 (premier plan, SEA, exe, port occupé) |
 | `tests/http.test.mjs` | ✅ 27/27 |
 | `tests/python.test.mjs` | ✅ 10/10 |
 | `tests/powershell.test.mjs` | ✅ 19/19 (syntaxe + régression fenêtre noire) |
 | `tests/ui.test.mjs` | ✅ 9/9 |
 | `tests/browser.test.mjs` | ✅ 12/12 (vrai Chromium) |
-| **TOTAL** | ✅ **161/161** |
+| **TOTAL** | ✅ **171/171** |
 | Parcours réel Chromium headless | ✅ régie → plein + bas + Cœur, 0 erreur console |
 | Sécurité traversée de dossiers | ✅ `400` sur dossier inconnu, noms neutralisés (Node, Python, PowerShell) |
 
@@ -130,6 +131,23 @@ clic droit, loupe 1:1 sur les aperçus.
 | Bouton « ♥ Cœur seul » | ✅ | Envoie le Cœur sans toucher au plein écran ni au bas centré |
 
 ## H. Chantiers restants (optionnels, non bloquants)
+
+### ✅ v1.2 — lanceur refait (méthode OpenPresenter) + `FREESTREAM.exe`
+
+Retour utilisateur : « le lanceur marche pas bien. Faut tricher le lanceur dans
+le programme openprésenteur de renaudchristinfonton-bj sur github ».
+
+Cause réelle trouvée en comparant les deux dépôts : notre `.bat` lançait le
+serveur dans une **fenêtre minimisée** puis ouvrait le navigateur après une
+attente fixe de 5 s. OpenPresenter fait l'inverse — serveur **au premier plan**,
+`OPEN=1`, et c'est le serveur qui ouvre le navigateur après `listen()`.
+
+Livré : `DEMARRER.bat` réécrit (4 étapes, choix du moteur, contrôle du port,
+premier plan, replis), `FREESTREAM.exe` autonome (Node SEA), `CONSTRUIRE-EXE.bat`,
+`outils/sea-entry.cjs`, `outils/sea-config.json`, ouverture navigateur et gestion
+du port occupé dans les 3 serveurs. 10 nouveaux tests.
+
+Reste manuel : double-clic réel sur Windows, OBS Studio.
 
 ### ⚠ Régression Windows corrigée — « fenêtre noire qui se ferme »
 

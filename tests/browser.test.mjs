@@ -83,7 +83,7 @@ before(async () => {
   prepareTestData(TMP, ROOT);
   child = spawn(process.execPath, ['server.js', String(PORT)], {
     cwd: ROOT,
-    env: { ...process.env, FREESTREAM_HOST:'127.0.0.1', FREESTREAM_DATA_DIR:TMP, FREESTREAM_STATE_FILE: path.join(TMP, 'state.json'), FREESTREAM_STATE_JS: path.join(TMP, 'live.js') },
+    env: { ...process.env, FREESTREAM_HOST:'127.0.0.1', FREESTREAM_OPEN:'0', OPEN:'0', FREESTREAM_DATA_DIR:TMP, FREESTREAM_STATE_FILE: path.join(TMP, 'state.json'), FREESTREAM_STATE_JS: path.join(TMP, 'live.js') },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   child.stderr.on('data', d => process.stderr.write(d));

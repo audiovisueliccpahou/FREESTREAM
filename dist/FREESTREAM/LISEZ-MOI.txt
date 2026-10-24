@@ -1,8 +1,24 @@
-﻿FREESTREAM 1.1.0 — RÉGIE DE CULTE HORS LIGNE
+﻿FREESTREAM 1.2.0 — RÉGIE DE CULTE HORS LIGNE
 =================================================
 
 *** VOUS AVEZ DEJA EU UNE FENETRE NOIRE QUI SE FERME ? LISEZ D'ABORD CECI ***
 =============================================================================
+  SOLUTION LA PLUS SIMPLE : double-cliquez sur FREESTREAM.exe
+  (un vrai programme Windows, deja construit dans ce dossier).
+
+  Il n'utilise NI script .bat NI PowerShell : rien a installer, aucune
+  politique d'execution, aucun probleme d'encodage. La regie et la page des
+  liens OBS s'ouvrent toutes seules des que le serveur est pret.
+  Si Windows affiche une alerte de securite (programme non signe) : cliquez
+  sur "Informations complementaires", puis "Executer quand meme".
+  Gardez le dossier complet a cote de l'exe : c'est votre regie.
+
+  Pour reconstruire l'exe vous-meme (Node.js une seule fois) :
+      double-cliquez sur CONSTRUIRE-EXE.bat
+
+  -------------------------------------------------------------------------
+  SI L'EXE NE DEMARRE PAS, ou si vous preferez un script :
+  -------------------------------------------------------------------------
   1. Double-cliquez sur DIAGNOSTIC.bat   (PAS sur DEMARRER.bat).
      Cette fenetre ne se ferme JAMAIS toute seule : elle affiche le rapport
      et ecrit DIAGNOSTIC.txt juste a cote.
@@ -13,19 +29,21 @@
        - Node / Python / winget / navigateur,
        - le port 8787 et un DEMARRAGE REEL du serveur sur un port temporaire.
   3. Ensuite seulement, double-cliquez sur DEMARRER.bat.
-     Il ne se ferme PLUS sans rien dire : si PowerShell echoue, il affiche
-     l'erreur, propose des causes, puis essaie Node.js, Python et enfin le
-     mode dossier. Journal : DEMARRAGE-LOG.txt.
+
+  DEMARRER.bat a ete ENTIEREMENT REFAIT selon la methode du projet
+  OpenPresenter (github.com/renaudchristinfonton-bj/Openpresenter) :
+  le serveur tourne AU PREMIER PLAN dans la fenetre, donc s'il plante son
+  message reste a l'ecran. Il ne ferme PLUS sans rien dire.
+  Journal : DEMARRAGE-LOG.txt.
 
   Rappel : DEMARRER.bat marche avec le PowerShell INTEGRE a Windows.
-  Aucune installation n'est obligatoire. Si une strategie d'entreprise
-  bloque PowerShell, installez Node.js (nodejs.org) ou utilisez le mode
-  dossier dans Chrome / Edge.
+  Aucune installation n'est obligatoire.
 =============================================================================
 
 1. DÉMARRER EN UN CLIC
    --------------------
-   Windows  : double-cliquez sur DEMARRER.bat
+   Windows  : double-cliquez sur FREESTREAM.exe (recommande)
+              ou, a defaut, sur DEMARRER.bat
    macOS    : double-cliquez sur DEMARRER.command
    Linux    : lancez ./DEMARRER.sh (ou faites-en un raccourci)
 

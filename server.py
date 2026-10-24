@@ -347,13 +347,34 @@ if __name__ == '__main__':
     START = time.time()
     for d in FOLDERS.values():
         os.makedirs(safe(d),exist_ok=True)
-    HTTPD = Server(('0.0.0.0',PORT),Handler)
+    try:
+        HTTPD = Server(('0.0.0.0',PORT),Handler)
+    except OSError as e:
+        print('\n  [ERREUR] Impossible d ecouter sur le port %d : %s' % (PORT,e))
+        print('  Le port est peut-etre deja utilise. Essayez deja :')
+        print('    http://localhost:%d/regie.html' % PORT)
+        print('  Ou changez de port :  set PORT=9000 && DEMARRER.bat')
+        sys.exit(1)
     HTTPD._stopping = False
     persist_soon()
     print('\n  FREESTREAM (serveur Python de repli) pret, 100% hors ligne')
     print('  Regie   : http://localhost:%d/regie.html' % PORT)
     print('  Sorties : http://localhost:%d/index.html' % PORT)
     print('  Dossier : %s\n' % ROOT)
+    # METHODE OpenPresenter : le .bat reste au premier plan, c'est le serveur
+    # qui ouvre le navigateur APRES que le port reponde vraiment.
+    if os.environ.get('OPEN') == '1' or os.environ.get('FREESTREAM_OPEN') == '1':
+        def _ouvrir():
+            time.sleep(0.4)
+            for page in ('regie.html','index.html'):
+                url = 'http://localhost:%d/%s' % (PORT,page)
+                try:
+                    if sys.platform == 'win32': subprocess.Popen(['explorer',url])
+                    elif sys.platform == 'darwin': subprocess.Popen(['open',url])
+                    else: subprocess.Popen(['xdg-open',url])
+                except Exception: pass
+                time.sleep(0.5)
+        threading.Thread(target=_ouvrir,daemon=True).start()
     try: HTTPD.serve_forever()
     except KeyboardInterrupt: pass
     finally: HTTPD._stopping=True; persist(); HTTPD.server_close()

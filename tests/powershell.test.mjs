@@ -139,7 +139,7 @@ describe('Regression Windows - plus de fenêtre noire qui se ferme', () => {
   });
 
   test('les .bat sont ASCII pur et sans chcp 65001', () => {
-    for (const f of ['DEMARRER.bat', 'DIAGNOSTIC.bat']) {
+    for (const f of ['DEMARRER.bat', 'DIAGNOSTIC.bat', 'CONSTRUIRE-EXE.bat']) {
       const s = fs.readFileSync(path.join(ROOT, f), 'utf8');
       assert.equal([...s].filter(c => c.codePointAt(0) > 127).length, 0, `${f} doit rester ASCII`);
       const actives = s.split(/\r?\n/).filter(l => !/^\s*(rem|::)/i.test(l)).join('\n');
@@ -163,7 +163,7 @@ describe('Regression Windows - plus de fenêtre noire qui se ferme', () => {
   });
 
   test('tous les goto du .bat pointent vers un label existant', () => {
-    for (const f of ['DEMARRER.bat', 'DIAGNOSTIC.bat']) {
+    for (const f of ['DEMARRER.bat', 'DIAGNOSTIC.bat', 'CONSTRUIRE-EXE.bat']) {
       const txt = fs.readFileSync(path.join(ROOT, f), 'utf8');
       const labels = new Set([...txt.matchAll(/^\s*:([A-Za-z0-9_]+)\s*$/gm)].map(m => m[1].toLowerCase()));
       const gotos = [...txt.matchAll(/\bgoto\s+:([A-Za-z0-9_]+)/gi)].map(m => m[1].toLowerCase());
@@ -198,8 +198,10 @@ describe('Livrable dist/FREESTREAM - memes garanties Windows', () => {
 
   test('le livrable contient les lanceurs et le diagnostic', (t) => {
     if (!present) return t.skip('dist non encore genere (node outils/exporter.mjs)');
-    for (const f of ['DEMARRER.bat', 'DIAGNOSTIC.bat', 'DEMARRER.sh', 'DEMARRER.command',
-      'server.ps1', path.join('outils', 'DEMARRER.ps1'), path.join('outils', 'diagnostic.ps1')]) {
+    for (const f of ['DEMARRER.bat', 'DIAGNOSTIC.bat', 'CONSTRUIRE-EXE.bat',
+      'DEMARRER.sh', 'DEMARRER.command',
+      'server.ps1', path.join('outils', 'DEMARRER.ps1'), path.join('outils', 'diagnostic.ps1'),
+      path.join('outils', 'sea-config.json'), path.join('outils', 'sea-entry.cjs')]) {
       assert.ok(fs.existsSync(path.join(D, f)), 'manquant dans le livrable : ' + f);
     }
   });
@@ -215,7 +217,7 @@ describe('Livrable dist/FREESTREAM - memes garanties Windows', () => {
 
   test('les .bat LIVRES sont en CRLF', (t) => {
     if (!present) return t.skip('dist non encore genere');
-    for (const f of ['DEMARRER.bat', 'DIAGNOSTIC.bat']) {
+    for (const f of ['DEMARRER.bat', 'DIAGNOSTIC.bat', 'CONSTRUIRE-EXE.bat']) {
       const b = fs.readFileSync(path.join(D, f));
       const lf = [...b].filter(x => x === 10).length;
       const crlf = (b.toString('latin1').match(/\r\n/g) || []).length;

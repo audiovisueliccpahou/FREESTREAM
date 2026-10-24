@@ -20,6 +20,7 @@ import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { MIME, FOLDERS, PORT_DEFAULT } from './core/config.js';
 import { defaultState, mergeState, ensureDefaults } from './core/defaults.js';
+import { spawn as fsSpawn } from 'node:child_process';
 
 const execFileAsync = promisify(execFile);
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -359,6 +360,42 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+/* --------------------------------------------------------------------------
+ * METHODE OpenPresenter : le .bat lance le serveur AU PREMIER PLAN.
+ * C'est donc le serveur lui-meme qui ouvre le navigateur, mais SEULEMENT
+ * apres que listen() a reussi. Plus de fenetre minimizee qui disparait,
+ * plus de navigateur ouvert avant que le port ne reponde.
+ * Variables reconnues : FREESTREAM_OPEN=1 (ou OPEN=1, compatibilite).
+ * ----------------------------------------------------------------------- */
+const OPEN_ON_START = process.env.FREESTREAM_OPEN === '1' || process.env.OPEN === '1';
+function openOne(url) {
+  try {
+    if (process.platform === 'win32') fsSpawn('cmd', ['/c', 'start', '', url], { detached: true, stdio: 'ignore' }).unref();
+    else if (process.platform === 'darwin') fsSpawn('open', [url], { detached: true, stdio: 'ignore' }).unref();
+    else fsSpawn('xdg-open', [url], { detached: true, stdio: 'ignore' }).unref();
+  } catch { /* navigateur absent : les URLs restent affichees */ }
+}
+function openRegieAndLinks(port) {
+  if (!OPEN_ON_START) return;
+  openOne(`http://localhost:${port}/regie.html`);
+  setTimeout(() => openOne(`http://localhost:${port}/index.html`), 900);
+}
+
+server.on('error', (e) => {
+  console.error('');
+  if (e.code === 'EADDRINUSE') {
+    console.error(`  [ERREUR] Le port ${PORT} est deja utilise.`);
+    console.error('  Un serveur tourne peut-etre deja. Essayez d ouvrir :');
+    console.error(`    http://localhost:${PORT}/regie.html`);
+    console.error('  Sinon changez de port :  set PORT=9000 && DEMARRER.bat');
+  } else {
+    console.error('  [ERREUR] Impossible de demarrer le serveur : ' + e.message);
+  }
+  console.error('  Dossier : ' + ROOT);
+  console.error('');
+  process.exit(1);
+});
+
 server.requestTimeout = 0;
 server.headersTimeout = 0;
 server.listen(PORT, HOST, async () => {
@@ -368,13 +405,27 @@ server.listen(PORT, HOST, async () => {
   const ips = [];
   for (const list of Object.values(os.networkInterfaces())) for (const i of list || [])
     if (i.family === 'IPv4' && !i.internal) ips.push(i.address);
-  console.log('\n  ╔══════════════════════════════════════════════════════════╗');
-  console.log('  ║   FREESTREAM — prêt, 100 % hors ligne                  ║');
-  console.log('  ╚══════════════════════════════════════════════════════════╝');
-  console.log(`  Régie      : http://localhost:${PORT}/regie.html`);
-  console.log(`  Sorties    : http://localhost:${PORT}/index.html`);
-  for (const ip of new Set(ips)) console.log(`  Réseau LAN : http://${ip}:${PORT}/regie.html`);
-  console.log(`  Dossier    : ${ROOT}\n`);
+  const W = process.platform === 'win32';   // console cmd.exe = ASCII lisible
+  console.log('');
+  if (W) {
+    console.log('  +----------------------------------------------------------+');
+    console.log('  |   FREESTREAM - pret, 100 % hors ligne                  |');
+    console.log('  +----------------------------------------------------------+');
+    console.log(`  Regie      : http://localhost:${PORT}/regie.html`);
+    console.log(`  Sorties    : http://localhost:${PORT}/index.html`);
+    for (const ip of new Set(ips)) console.log(`  Reseau LAN : http://${ip}:${PORT}/regie.html`);
+    console.log(`  Dossier    : ${ROOT}`);
+    console.log('');
+  } else {
+    console.log('  ╔══════════════════════════════════════════════════════════╗');
+    console.log('  ║   FREESTREAM — prêt, 100 % hors ligne                  ║');
+    console.log('  ╚══════════════════════════════════════════════════════════╝');
+    console.log(`  Régie      : http://localhost:${PORT}/regie.html`);
+    console.log(`  Sorties    : http://localhost:${PORT}/index.html`);
+    for (const ip of new Set(ips)) console.log(`  Réseau LAN : http://${ip}:${PORT}/regie.html`);
+    console.log(`  Dossier    : ${ROOT}\n`);
+  }
+  openRegieAndLinks(PORT);
 });
 
 for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, async () => {

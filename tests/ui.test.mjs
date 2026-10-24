@@ -21,7 +21,7 @@ before(async () => {
   PORT = await freePort(); BASE = `http://127.0.0.1:${PORT}`;
   prepareTestData(TMP, ROOT);
   child = spawn(process.execPath, ['server.js',String(PORT)], { cwd:ROOT, stdio:['ignore','pipe','pipe'],
-    env:{...process.env, FREESTREAM_HOST:'127.0.0.1', FREESTREAM_DATA_DIR:TMP, FREESTREAM_STATE_FILE:path.join(TMP,'state.json'), FREESTREAM_STATE_JS:path.join(TMP,'live.js')} });
+    env:{...process.env, FREESTREAM_HOST:'127.0.0.1', FREESTREAM_OPEN:'0', OPEN:'0', FREESTREAM_DATA_DIR:TMP, FREESTREAM_STATE_FILE:path.join(TMP,'state.json'), FREESTREAM_STATE_JS:path.join(TMP,'live.js')} });
   await waitReady();
 
   const dom = new JSDOM(`<!doctype html><html><body>

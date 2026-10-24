@@ -185,6 +185,44 @@ automatiquement par l'ajustement. La régie dispose aussi de **⛶ Max** (F11)
 pour passer en plein écran et de **◧ Aperçus** pour replier le panneau de droite
 et donner toute la largeur à l'éditeur.
 
+### 3.3 ter. `FREESTREAM.exe` — plus aucun script à interpréter
+
+Le livrable contient un **vrai exécutable Windows autonome** (Node SEA, 83 Mo),
+construit avec la même méthode que le projet
+[OpenPresenter de renaudchristinfonton-bj](https://github.com/renaudchristinfonton-bj/Openpresenter)
+(`servergestionobs/build-exe-windows.bat`). Double-cliquez dessus : ni `.bat`,
+ni PowerShell, ni politique d'exécution, ni encodage. Le navigateur s'ouvre
+après que le serveur écoute réellement.
+
+L'exe n'embarque **que l'amorce** : le dossier complet reste à côté et
+`outils/sea-entry.cjs` charge `server.js` depuis le disque. Les mises à jour se
+font donc en remplaçant simplement les fichiers. Pour reconstruire :
+`CONSTRUIRE-EXE.bat` (Node.js une fois, puis `npx postject` une fois — tout le
+reste fonctionne hors ligne).
+
+**Validé ici** : injection PE (signature MZ, ressource `NODE_SEA_BLOB`, sentinel
+présents), et surtout exécution réelle de la même amorce en SEA sous Linux
+(`/api/health` → 200, `/regie.html` → 200). Le double-clic sur un vrai Windows
+reste à confirmer par l'utilisateur.
+
+### 3.4. `DEMARRER.bat` refait — méthode OpenPresenter
+
+Ancien défaut : le serveur partait dans une fenêtre *minimisée* (`start /min
+cmd /c`), donc un plantage disparaissait sans laisser de trace, et le navigateur
+s'ouvrait après un `timeout /t 5` aveugle, même si le port ne répondait pas.
+
+Nouveau comportement, calqué sur `demarrer-windows.bat` d'OpenPresenter :
+
+1. vérification des fichiers ; 2. choix du moteur (**Node → Python → `py` →
+PowerShell intégré**) ; 3. contrôle du port (`netstat` + test `/api/health`) ;
+4. **démarrage au premier plan**. Le serveur reçoit `OPEN=1` et ouvre lui-même
+la régie + les liens OBS **après** `listen()`. Port surchargeable :
+`set PORT=9000 && DEMARRER.bat`.
+
+Les trois serveurs (`server.js`, `server.py`, `server.ps1`) gèrent maintenant
+`FREESTREAM_OPEN`/`OPEN` et affichent un message explicite avec code de sortie 1
+si le port est déjà pris, au lieu d'un crash muet.
+
 ### 3.3 bis. Dépannage Windows : plus de fenêtre noire qui se ferme
 
 **Symptôme rencontré** : au lancement de `DEMARRER.bat` (même en administrateur),
@@ -378,7 +416,7 @@ console**.
 
 ```bash
 npm install                 # outils de test — le livrable n'en a PAS besoin
-npm test                    # TOUTES les suites (161 tests)
+npm test                    # TOUTES les suites (171 tests)
 node --test tests/unit.test.mjs
 node --test tests/render.test.mjs
 node --test tests/http.test.mjs
@@ -392,13 +430,14 @@ node --test tests/browser.test.mjs
 |---|---|---|
 | `unit.test.mjs` | **66/66** | Références bibliques, Esther 8:9 en 4 sections, minuteur négatif, médias/YouTube, `?tool=`, durée lowerthird, **sortie Cœur**, vignettage média, RTF navigateur |
 | `render.test.mjs` | **18/18** | Déterminisme preview/OBS, fond inchangé, transparence, HTML assaini, auto-ajustement, vidéo réutilisée, `page=1 → page=4`, YouTube, **vignette image/vidéo** |
+| `launcher.test.mjs` | **10/10** | Lanceur au premier plan, amorce SEA exécutée, exe PE vérifié, port occupé |
 | `http.test.mjs` | **27/27** | Santé, pages, MIME, **sécurité des dossiers**, état, SSE, CRUD, upload, Range, copie, **duplication réelle**, renommage, conversion, présence, 404 |
 | `python.test.mjs` | **10/10** | Le serveur de repli Python : mêmes pages, patch, SSE, Range, CRUD, upload, duplication, sécurité |
 | `powershell.test.mjs` | **19/19** | Syntaxe PowerShell analysée par la grammaire WASM de VS Code, routes, sécurité, lanceurs `.bat`/`.sh`/`.command` |
 | `ui.test.mjs` | **9/9** | Montage réel des 9 modules jsdom : suggestions `es`, 4 sections, envoi, flèches, sous-onglets, 2 clics médias, lowerthird, designs, liens, orateur, raccourcis |
 | `browser.test.mjs` | **12/12** | **Vrai Chromium** : 0 erreur console, régie → plein + bas, plein figé pendant les 4 sections, **sortie Cœur collante**, **vignette média**, opacité OBS, transparence, liens |
 
-**Total : 161 tests, 0 échec.**
+**Total : 171 tests, 0 échec.**
 
 **Isolation des tests** : les serveurs de test reçoivent `FREESTREAM_DATA_DIR`
 qui pointe vers un dossier temporaire. Les démos du projet y sont copiées, mais

@@ -12,6 +12,9 @@ DEMARRAGE-LOG.txt
 donnees/etat/*.tmp
 donnees/medias/.cache/
 
+# Blob de construction SEA (l'executable final, lui, EST livre dans dist/).
+sea-prep.blob
+
 # Captures générées pendant les tests (gardées dans docs/captures/)
 tests/screenshot-*.png
 

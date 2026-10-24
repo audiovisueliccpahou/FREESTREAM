@@ -34,13 +34,13 @@ if (path.resolve(DEST) === ROOT || DEST.startsWith(ROOT + path.sep) && DEST === 
 const INCLUDE = [
   'index.html', 'regie.html', 'regies/', 'outputs/', 'core/', 'regie/', 'styles/',
   'templates/', 'outils/', 'donnees/', 'docs/', 'server.js', 'server.py',
-  'DEMARRER.bat', 'DIAGNOSTIC.bat', 'DEMARRER.sh', 'DEMARRER.command', 'server.ps1',
+  'DEMARRER.bat', 'DIAGNOSTIC.bat', 'CONSTRUIRE-EXE.bat', 'DEMARRER.sh', 'DEMARRER.command', 'server.ps1',
   'README.md', 'LISEZ-MOI.txt', 'VERSION.txt',
   'ROADMAP.md', 'package.json', '.gitignore',
 ];
 const EXCLUDE_DIR = new Set(['node_modules', '.git', '.cache', '.venv', 'dist', '__pycache__',
   '.pytest_cache', '.ruff_cache', 'coverage', '.next', '.arena', 'Unselected files']);
-const EXCLUDE_FILE = /\.(log|tmp|pyc|map)$|^screenshot-|^state\.json$|^live\.js$|^DIAGNOSTIC\.txt$|^DEMARRAGE-LOG\.txt$|^\.DS_Store$|^\._/i;
+const EXCLUDE_FILE = /\.(log|tmp|pyc|map|exe|blob)$|^screenshot-|^state\.json$|^live\.js$|^DIAGNOSTIC\.txt$|^DEMARRAGE-LOG\.txt$|^\.DS_Store$|^\._/i;
 const DATA_FOLDERS = ['bibles', 'chants', 'lowerthirds', 'medias', 'projets', 'designs', 'polices', 'etat'];
 
 let files = 0, bytes = 0, skipped = 0;
@@ -85,11 +85,16 @@ console.log('\n  FREESTREAM — fabrication du dossier livrable');
 console.log('  Source      : ' + ROOT);
 console.log('  Destination : ' + DEST + '\n');
 
+// Un eventuel .exe deja present dans le livrable est conserve d'un export a
+// l'autre : c'est un binaire de 83 Mo qu'on ne veut pas avoir a reconstruire.
+let carriedExe = null;
 if (fs.existsSync(DEST)) {
   if (!has('--force')) {
     console.error(red('Le dossier existe déjà. Utilisez --force pour le remplacer, ou --dest autre-part.'));
     process.exit(1);
   }
+  const oldExe = path.join(DEST, 'FREESTREAM.exe');
+  if (fs.existsSync(oldExe)) carriedExe = fs.readFileSync(oldExe);
   fs.rmSync(DEST, { recursive: true, force: true });
 }
 fs.mkdirSync(DEST, { recursive: true });
@@ -104,6 +109,20 @@ for (const rel of INCLUDE) {
   if (fs.statSync(src).isDirectory()) walk(src, dest);
   else copyFile(src, dest);
 }
+// L'executable autonome pre-construit n'est PAS un fichier source : il est
+// git-ignore, mais s'il est present dans l'atelier on l'ajoute au livrable.
+// Tout le monde peut le reconstruire avec CONSTRUIRE-EXE.bat.
+const prebuilt = path.join(ROOT, 'FREESTREAM.exe');
+if (fs.existsSync(prebuilt) && !has('--sans-exe')) {
+  fs.copyFileSync(prebuilt, path.join(DEST, 'FREESTREAM.exe'));
+  files++; bytes += fs.statSync(prebuilt).size;
+  console.log(green('  + FREESTREAM.exe (autonome, pre-construit)'));
+} else if (carriedExe && !has('--sans-exe')) {
+  fs.writeFileSync(path.join(DEST, 'FREESTREAM.exe'), carriedExe);
+  files++; bytes += carriedExe.length;
+  console.log(green('  + FREESTREAM.exe (conservé de l’export précédent)'));
+}
+
 for (const f of DATA_FOLDERS) {
   const d = path.join(DEST, 'donnees', f);
   fs.mkdirSync(d, { recursive: true });

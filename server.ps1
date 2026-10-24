@@ -312,6 +312,16 @@ Write-Host "  Sorties : $prefix`index.html"
 Write-Host "  Dossier : $Root"
 Write-Host ''
 
+if ($env:OPEN -eq '1' -or $env:FREESTREAM_OPEN -eq '1') {
+  try {
+    Start-Process ("{0}regie.html" -f $prefix)
+    Start-Sleep -Milliseconds 800
+    Start-Process ("{0}index.html" -f $prefix)
+  } catch {
+    Write-Host '  [INFO] Ouverture automatique du navigateur impossible.'
+  }
+}
+
 $script:Stop = $false
 while ($listener.IsListening -and -not $script:Stop) {
   $ctx = $null

@@ -1,0 +1,5 @@
+{
+  "main": "outils/sea-entry.cjs",
+  "output": "sea-prep.blob",
+  "disableExperimentalSEAWarning": true
+}
