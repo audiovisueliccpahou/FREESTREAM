@@ -1,5 +1,27 @@
-﻿FREESTREAM 1.0.0 — RÉGIE DE CULTE HORS LIGNE
+﻿FREESTREAM 1.1.0 — RÉGIE DE CULTE HORS LIGNE
 =================================================
+
+*** VOUS AVEZ DEJA EU UNE FENETRE NOIRE QUI SE FERME ? LISEZ D'ABORD CECI ***
+=============================================================================
+  1. Double-cliquez sur DIAGNOSTIC.bat   (PAS sur DEMARRER.bat).
+     Cette fenetre ne se ferme JAMAIS toute seule : elle affiche le rapport
+     et ecrit DIAGNOSTIC.txt juste a cote.
+  2. Envoyez-moi DIAGNOSTIC.txt. Il contient :
+       - les fichiers presents ou manquants,
+       - l'encodage et la SYNTAXE REELLE des scripts PowerShell,
+       - la politique d'execution de votre Windows,
+       - Node / Python / winget / navigateur,
+       - le port 8787 et un DEMARRAGE REEL du serveur sur un port temporaire.
+  3. Ensuite seulement, double-cliquez sur DEMARRER.bat.
+     Il ne se ferme PLUS sans rien dire : si PowerShell echoue, il affiche
+     l'erreur, propose des causes, puis essaie Node.js, Python et enfin le
+     mode dossier. Journal : DEMARRAGE-LOG.txt.
+
+  Rappel : DEMARRER.bat marche avec le PowerShell INTEGRE a Windows.
+  Aucune installation n'est obligatoire. Si une strategie d'entreprise
+  bloque PowerShell, installez Node.js (nodejs.org) ou utilisez le mode
+  dossier dans Chrome / Edge.
+=============================================================================
 
 1. DÉMARRER EN UN CLIC
    --------------------
@@ -23,28 +45,7 @@
      • la RÉGIE      : http://localhost:8787/regie.html
      • les LIENS OBS : http://localhost:8787/index.html
    Laissez la fenêtre/terminal serveur ouvert(e) pendant le culte.
-   Un journal est écrit dans demarrage.log en cas de problème.
-
-   *** SI CA NE DEMARRE PAS (fenêtre noire qui se ferme) ***
-   ------------------------------------------------------------
-   Lancez DIAGNOSTIC.bat (il ne se ferme JAMAIS tout seul). Il verifie :
-     - les fichiers presents ou manquants,
-     - l'encodage et la SYNTAXE REELLE des scripts PowerShell,
-     - la politique d'execution de votre Windows,
-     - les moteurs Node/Python/winget et le navigateur,
-     - le port 8787 et un demarrage REEL du serveur sur un port temporaire.
-   Il affiche le resultat a l'ecran ET ecrit DIAGNOSTIC.txt a cote de
-   DEMARRER.bat. Envoyez ce fichier pour une aide rapide.
-
-   DEMARRER.bat a aussi ete corrige : il ne se ferme PLUS sans rien dire.
-   Si PowerShell echoue, il affiche l'erreur, propose des causes, puis
-   essaie automatiquement Node.js, Python, et enfin le mode dossier.
-   Un journal est ecrit dans DEMARRAGE-LOG.txt.
-
-   Rappel : DEMARRER.bat fonctionne avec le PowerShell INTEGRE a Windows.
-   Aucune installation n'est obligatoire. Si votre entreprise bloque
-   PowerShell par une stratégie de groupe, installez Node.js (nodejs.org)
-   ou utilisez le mode dossier dans Chrome/Edge.
+   Un journal est écrit dans DEMARRAGE-LOG.txt en cas de problème.
 
 2. DANS OBS
    Ouvrez la page des liens, copiez l'adresse de la sortie voulue, puis dans
