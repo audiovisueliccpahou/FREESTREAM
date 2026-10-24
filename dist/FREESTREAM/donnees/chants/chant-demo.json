@@ -1,0 +1,34 @@
+{
+  "id": "song-mvlmu5ad-o",
+  "title": "Chant de démonstration",
+  "sections": [
+    {
+      "id": "sec-mvlmu5ad-m",
+      "label": "",
+      "lines": [
+        "Ainsi soit-il, Seigneur",
+        "Que ta volonté soit faite",
+        "En mon cœur, en ma maison",
+        "Aujourd'hui et à jamais"
+      ],
+      "chords": []
+    },
+    {
+      "id": "sec-mvlmu5ad-n",
+      "label": "",
+      "lines": [
+        "Tu es digne, tu es saint",
+        "Tu es le Dieu de ma vie",
+        "Je te loue, je te loue",
+        "De tout mon être"
+      ],
+      "chords": []
+    }
+  ],
+  "meta": {},
+  "createdAt": 1792800010309,
+  "updatedAt": 1792800010309,
+  "tags": [],
+  "author": "",
+  "key": ""
+}

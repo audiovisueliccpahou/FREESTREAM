@@ -1,0 +1,102 @@
+﻿FREESTREAM 1.0.0 — RÉGIE DE CULTE HORS LIGNE
+=================================================
+
+1. DÉMARRER EN UN CLIC
+   --------------------
+   Windows  : double-cliquez sur DEMARRER.bat
+   macOS    : double-cliquez sur DEMARRER.command
+   Linux    : lancez ./DEMARRER.sh (ou faites-en un raccourci)
+
+   Le lanceur FAIT TOUT TOUT SEUL :
+     • il vérifie le dossier, le navigateur et les moteurs disponibles ;
+     • il choisit Node.js, sinon Python, sinon le serveur PowerShell intégré
+       à Windows (donc RIEN à installer dans la plupart des cas) ;
+     • si aucun moteur ne répond, il PROPOSE d'installer Node.js (winget sur
+       Windows, Homebrew/apt/dnf sur Mac/Linux — avec votre accord et Internet) ;
+     • il attend que le serveur réponde réellement (contrôle de santé) ;
+     • il ouvre la RÉGIE et la page des LIENS OBS dans votre navigateur ;
+     • si vraiment tout échoue, il ouvre la régie en MODE DOSSIER : cliquez
+       sur « Mode dossier » et sélectionnez ce dossier une seule fois.
+       Tout fonctionne alors sans serveur, sans installation, sans réseau.
+
+   Deux fenêtres s'ouvrent :
+     • la RÉGIE      : http://localhost:8787/regie.html
+     • les LIENS OBS : http://localhost:8787/index.html
+   Laissez la fenêtre/terminal serveur ouvert(e) pendant le culte.
+   Un journal est écrit dans demarrage.log en cas de problème.
+
+2. DANS OBS
+   Ouvrez la page des liens, copiez l'adresse de la sortie voulue, puis dans
+   OBS : Sources > + > Source navigateur > collez l'URL.
+   Réglez la taille sur 1920×1080 (ou votre résolution de diffusion).
+   Le projet travaille en interne en 8K (7680×4320) : le texte reste net
+   même si votre écran final est en 1080p.
+   Cochez « Fonds transparents » pour laisser passer une caméra derrière.
+
+   Sorties principales :
+     plein.html      plein écran universel
+     bas.html        bas centré universel
+     coeur.html      CŒUR : chants en gros + SECTION SUIVANTE en bas
+     plein-bible, bas-bible, plein-chants, bas-chants,
+     plein-medias, bas-medias, plein-lowerthird, bas-lowerthird
+     orateur.html    vue orateur (messages + retour plein écran)
+     minuteur.html   sortie minuteur de la régie temps
+     custom.html     vos sorties personnalisées (portrait, tailles précises)
+
+   La sortie CŒUR reste affichée même si la Bible ou un média prend le plein
+   écran : c'est le moniteur de l'équipe de louange. Ajoutez ?sticky=0 à son
+   URL si vous préférez qu'elle suive l'outil en cours.
+
+3. RACCOURCIS (régie)
+   1…9        changer d'outil          F   envoyer en plein écran
+   S          envoyer en bas centré    N   noir / rétablir
+   ← →        verset ou section        Entrée / Espace  navigation Bible
+   Ctrl+Z     annuler                  Ctrl+F  recherche
+   F11 ou « ⛶ Max »  plein écran : toute la place pour la régie
+   « ◧ Aperçus »     replie le panneau des aperçus pour maximiser l'éditeur
+   Clic droit  menu contextuel sur les éléments
+
+4. BIBLE — saisie ultra-rapide
+   Tapez 1 à 2 lettres du livre (« es » → Esther) > Entrée > chapitre >
+   Espace > verset > Entrée. Les flèches parcourent les versets ; en mode
+   « Découpage bas centré », elles parcourent d'abord les sections du bas
+   centré et le plein écran n'avance qu'à la fin de toutes les sections.
+   Toutes les mises en forme (gras, italique, couleur, surlignage…) sont
+   possibles dans « Texte affiché » et conservées à l'antenne.
+
+5. CHANTS ET SORTIE CŒUR
+   Un retour à la ligne = nouvelle ligne de la même section.
+   Deux retours à la ligne = nouvelle section.
+   Les chants sortent TOUJOURS en grands caractères.
+   Bouton « ♥ Cœur seul » : envoie la sortie Cœur sans toucher au plein
+   écran ni au bas centré. La section suivante est calculée automatiquement
+   (prochaine section différente, sinon écran suivant).
+
+6. MÉDIAS — AUCUNE BANDE NOIRE
+   Si une image ou une vidéo ne fait pas 1920×1080, FREESTREAM remplit tout
+   l'écran avec une VIGNETTE floutée inspirée du média lui-même, et garde le
+   média net au premier plan, sans recadrage. Deux réglages dans l'onglet
+   Médias : « Vignette de fond » et « Remplir (recadrer) ».
+   Premier clic = aperçu local. Deuxième clic = envoi vers OBS.
+   Tout fichier situé hors du projet est copié dans donnees/medias/.
+   Pour contrôler un PPTX/DOCX page par page :
+       node outils/convertir.mjs diapos mon-fichier.pptx
+
+7. REMPLISSAGE MAXIMAL
+   Dans l'onglet Designs, cochez « ⛶ Remplissage maximal » : les marges sont
+   réduites et la police est automatiquement agrandie au maximum de la zone.
+   Le calcul est fait dans le moteur de rendu unique : c'est STRICTEMENT
+   identique dans l'aperçu, dans l'éditeur et dans OBS.
+
+8. DONNÉES
+   donnees/bibles/  donnees/chants/  donnees/lowerthirds/  donnees/medias/
+   donnees/projets/ donnees/designs/ donnees/polices/      donnees/etat/
+   Tout est sauvegardé automatiquement. Copiez ce dossier pour sauvegarder.
+
+9. IMPORTER UNE BIBLE OU DES CHANTS
+       node outils/convertir.mjs bible ma-bible.csv --version "Ma version"
+       node outils/convertir.mjs chants mes-chants.txt
+   Formats : JSON, CSV, TSV, TXT, OSIS/Zefania/USFX. Aucun réseau requis.
+   Les API en ligne gratuites sont OPTIONNELLES : sans elles, tout marche.
+
+Documentation complète : README.md

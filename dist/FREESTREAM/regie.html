@@ -1,0 +1,90 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FREESTREAM — Régie</title>
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/regie.css">
+<link rel="stylesheet" href="styles/output.css">
+<style>
+  /* les sorties sont transparentes : on donne un fond damier aux aperçus pour voir la transparence */
+  .pv .stage-host, .pv iframe { background: repeating-conic-gradient(#1b2230 0% 25%,#141a26 0% 50%) 50%/16px 16px !important; }
+  #ctx{position:fixed;z-index:9000;background:var(--p-2);border:1px solid var(--line-2);border-radius:10px;padding:6px;box-shadow:var(--sh);min-width:200px;display:none}
+  #ctx button{display:block;width:100%;text-align:left;padding:8px 11px;border:0;border-radius:6px;background:transparent;color:var(--txt);cursor:pointer;font-size:13px}
+  #ctx button:hover{background:var(--p-3)}
+  #ctx hr{border:0;border-top:1px solid var(--line);margin:5px 0}
+  .navbtn.sep-nav{margin-top:auto}
+  .cap .tag{cursor:default}.cap .tag.zoom{cursor:pointer;background:rgba(110,168,255,.25);color:#dbe9ff}
+  #zoomdlg{width:min(94vw,1500px);padding:12px}
+  #zoomdlg .hd{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  #zoomdlg iframe{width:100%;aspect-ratio:16/9;border:1px solid var(--line-2);border-radius:10px;background:repeating-conic-gradient(#1b2230 0% 25%,#141a26 0% 50%) 50%/24px 24px}
+</style></head>
+<body class="regie">
+<div id="app">
+  <div id="topbar">
+    <div class="logo">FREESTREAM<small>RÉGIE DE CULTE</small></div>
+    <div class="stat"><span class="dot" id="conn-dot"></span><span id="conn-txt">Connexion…</span></div>
+    <span class="live" id="onair">● EN DIRECT</span>
+    <span class="pill" id="cur-tool">—</span>
+    <div class="spacer"></div>
+    <span class="muted small" id="clock"></span>
+    <button class="btn blue" id="btn-folder" style="display:none" title="Fonctionner sans serveur, uniquement avec le dossier">📂 Mode dossier</button>
+    <button class="btn" id="btn-panel" title="Afficher / masquer le panneau des aperçus">◧ Aperçus</button>
+    <button class="btn" id="btn-max" title="Plein écran : toute la place pour la régie (F11)">⛶ Max</button>
+    <button class="btn" id="btn-undo" title="Ctrl+Z">↶ Retour</button>
+    <button class="btn" id="btn-preview-p" title="P">👁 Plein</button>
+    <button class="btn" id="btn-preview-b" title="L">👁 Bas</button>
+    <button class="btn danger" id="btn-black" title="B / Échap">■ Noir</button>
+    <a class="btn primary" href="index.html" target="_blank">🔌 Sorties</a>
+  </div>
+
+  <nav id="nav">
+    <button class="navbtn on" data-t="bible"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v3H6.5A2.5 2.5 0 0 1 4 20.5z"/><path d="M9 7h7M9 10h5"/></svg></span>Bible<span class="kbd">1</span></button>
+    <button class="navbtn" data-t="chants"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></span>Chants<span class="kbd">2</span></button>
+    <button class="navbtn" data-t="medias"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="19" height="15" rx="2"/><path d="M10 9l5 3-5 3z"/></svg></span>Médias<span class="kbd">3</span></button>
+    <button class="navbtn" data-t="lowerthird"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="19" height="15" rx="2"/><path d="M2.5 14h19" stroke-width="2.6"/></svg></span>LT<span class="kbd">4</span></button>
+    <button class="navbtn" data-t="designs"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l9.5 9.5-9.5 9.5L2.5 12z"/><path d="M12 7l5 5-5 5-5-5z"/></svg></span>Designs</button>
+    <button class="navbtn" data-t="outputs"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M9.5 8.5l2.5 2.5-2.5 2.5" transform="translate(2 0)"/></svg></span>Sorties</button>
+    <button class="navbtn" data-t="orateur"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M3 6.5l9 7 9-7"/></svg></span>Orat.</button>
+    <button class="navbtn" data-t="minuteur"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8.5"/><path d="M12 8.5V13l3 2M9 2h6M12 2v2.5"/></svg></span>Temps</button>
+    <button class="navbtn" data-t="aide"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.5 9a2.6 2.6 0 1 1 3.4 2.5c-.8.3-.9 1-.9 1.8"/><circle cx="12" cy="17" r=".9" fill="currentColor" stroke="none"/></svg></span>Aide</button>
+  </nav>
+
+  <main id="main" class="scroll"></main>
+
+  <aside id="side">
+    <div class="sidehead"><strong>Aperçus</strong><span class="spacer"></span>
+      <span class="pill acc">TRAVAIL</span><span class="pill" style="border-color:rgba(255,90,90,.35);color:#ff9d9d">À L'ANTENNE</span></div>
+    <div class="previews">
+      <div class="pv"><div class="cap">TRAVAIL · PLEIN ÉCRAN<span class="tag zoom" data-zoom="plein" title="Agrandir (1:1)">⤢ 8K</span></div><div id="pv-work-plein" class="stage-host"></div></div>
+      <div class="pv"><div class="cap">À L'ANTENNE · PLEIN ÉCRAN<span class="tag air zoom" data-zoom="air-plein" title="Agrandir (1:1)">⤢ OBS</span></div><iframe id="pv-air-plein" src="outputs/plein.html?preview=1"></iframe></div>
+      <div class="pv"><div class="cap">TRAVAIL · BAS CENTRÉ<span class="tag zoom" data-zoom="bas" title="Agrandir (1:1)">⤢ 8K</span></div><div id="pv-work-bas" class="stage-host"></div></div>
+      <div class="pv"><div class="cap">À L'ANTENNE · BAS CENTRÉ<span class="tag air zoom" data-zoom="air-bas" title="Agrandir (1:1)">⤢ OBS</span></div><iframe id="pv-air-bas" src="outputs/bas.html?preview=1"></iframe></div>
+      <div class="pv wide"><div class="cap">♥ TRAVAIL · CŒUR (section suivante en bas)<span class="tag zoom" data-zoom="coeur" title="Agrandir (1:1)">⤢ 8K</span></div><div id="pv-work-coeur" class="stage-host"></div></div>
+      <div class="pv wide"><div class="cap">♥ À L'ANTENNE · CŒUR<span class="tag air zoom" data-zoom="air-coeur" title="Agrandir (1:1)">⤢ OBS</span></div><iframe id="pv-air-coeur" src="outputs/coeur.html?preview=1"></iframe></div>
+    </div>
+    <div style="padding:0 12px 14px" id="sideinfo"></div>
+  </aside>
+</div>
+
+<div id="ctx"></div>
+<dialog id="dossierdlg"><div style="text-align:center;padding:8px">
+  <div style="font-size:34px;margin-bottom:6px">📂</div>
+  <h2 style="margin:0 0 8px">Mode dossier — zéro installation</h2>
+  <p class="muted" style="margin:0 0 16px;line-height:1.55;max-width:520px">
+    Aucun serveur n'est disponible. Autorisez FREESTREAM à écrire dans son propre
+    dossier : la régie enregistrera <code>donnees/etat/live.js</code> et les sorties
+    OBS continueront de fonctionner, <strong>sans rien installer et sans réseau</strong>.
+  </p>
+  <div class="row" style="justify-content:center">
+    <button class="btn primary lg" id="dossier-go">📂 Autoriser ce dossier</button>
+    <button class="btn" id="dossier-later">Plus tard</button>
+  </div>
+  <div class="hint" style="margin-top:14px">Chrome ou Edge requis pour cette fonctionnalité. Sinon installez Node.js ou Python et relancez <code>DEMARRER</code>.</div>
+</div></dialog>
+<button id="exitmax" title="Quitter le plein écran">✕ Quitter le plein écran</button>
+<dialog id="zoomdlg"><div class="hd"><strong id="zoomtitle">Aperçu 1:1</strong><span class="spacer"></span>
+<button class="btn xs" id="zoomreload">↻ Actualiser</button><button class="btn xs" id="zoomclose">✕ Fermer</button></div>
+<iframe id="zoomframe" src="about:blank"></iframe></dialog>
+<div id="toasts"></div>
+
+<script type="module" src="regie/app.js"></script>
+</body></html>

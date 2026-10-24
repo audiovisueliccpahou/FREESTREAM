@@ -1,0 +1,169 @@
+{
+  "id": "bible:plein",
+  "name": "Bible — Plein écran",
+  "tool": "bible",
+  "type": "plein",
+  "canvas": {
+    "w": 7680,
+    "h": 4320
+  },
+  "background": {
+    "kind": "transparent",
+    "color": "#000000",
+    "src": null,
+    "fit": "cover",
+    "blur": 0,
+    "brightness": 1,
+    "saturate": 1,
+    "opacity": 1,
+    "muted": true,
+    "loop": true
+  },
+  "transition": {
+    "type": "fade",
+    "duration": 320
+  },
+  "layers": [
+    {
+      "id": "shp-mvlo8rfy-1",
+      "type": "shape",
+      "box": {
+        "x": 420,
+        "y": 520,
+        "w": 6840,
+        "h": 3280
+      },
+      "fill": "rgba(6,10,20,.42)",
+      "radius": 64,
+      "border": null,
+      "opacity": 1,
+      "visible": true
+    },
+    {
+      "id": "txt-mvlo8rfy-2",
+      "type": "text",
+      "role": "reference",
+      "box": {
+        "x": 620,
+        "y": 700,
+        "w": 6440,
+        "h": 320
+      },
+      "style": {
+        "fontFamily": "\"FREESTREAM Sans\", \"Segoe UI\", \"Inter\", \"Helvetica Neue\", Arial, sans-serif",
+        "fontSize": 168,
+        "minFontSize": 48,
+        "fontWeight": 700,
+        "fontStyle": "normal",
+        "color": "#FFD479",
+        "opacity": 1,
+        "align": "left",
+        "valign": "middle",
+        "lineHeight": 1.14,
+        "letterSpacing": 0,
+        "wordSpacing": 0,
+        "textTransform": "uppercase",
+        "textDecoration": "none",
+        "highlight": null,
+        "shadow": "0 0.02em 0.12em rgba(0,0,0,.85)",
+        "strokeColor": null,
+        "strokeWidth": 0,
+        "padding": 24,
+        "bgColor": null,
+        "bgOpacity": 0,
+        "borderRadius": 0,
+        "autoFit": true,
+        "textIndent": 0,
+        "direction": "ltr",
+        "whiteSpace": "normal"
+      },
+      "template": "{{reference}}",
+      "visible": true,
+      "locked": false
+    },
+    {
+      "id": "txt-mvlo8rfy-3",
+      "type": "text",
+      "role": "content",
+      "box": {
+        "x": 620,
+        "y": 1120,
+        "w": 6440,
+        "h": 2380
+      },
+      "style": {
+        "fontFamily": "\"FREESTREAM Sans\", \"Segoe UI\", \"Inter\", \"Helvetica Neue\", Arial, sans-serif",
+        "fontSize": 300,
+        "minFontSize": 48,
+        "fontWeight": 700,
+        "fontStyle": "normal",
+        "color": "#FFFFFF",
+        "opacity": 1,
+        "align": "left",
+        "valign": "middle",
+        "lineHeight": 1.16,
+        "letterSpacing": 0,
+        "wordSpacing": 0,
+        "textTransform": "none",
+        "textDecoration": "none",
+        "highlight": null,
+        "shadow": "0 0.02em 0.12em rgba(0,0,0,.85)",
+        "strokeColor": null,
+        "strokeWidth": 0,
+        "padding": 24,
+        "bgColor": null,
+        "bgOpacity": 0,
+        "borderRadius": 0,
+        "autoFit": true,
+        "textIndent": 0,
+        "direction": "ltr",
+        "whiteSpace": "normal"
+      },
+      "template": "{{content}}",
+      "visible": true,
+      "locked": false
+    },
+    {
+      "id": "txt-mvlo8rfy-4",
+      "type": "text",
+      "role": "version",
+      "box": {
+        "x": 620,
+        "y": 3520,
+        "w": 6440,
+        "h": 180
+      },
+      "style": {
+        "fontFamily": "\"FREESTREAM Sans\", \"Segoe UI\", \"Inter\", \"Helvetica Neue\", Arial, sans-serif",
+        "fontSize": 112,
+        "minFontSize": 48,
+        "fontWeight": 600,
+        "fontStyle": "normal",
+        "color": "#B9C6DA",
+        "opacity": 1,
+        "align": "right",
+        "valign": "middle",
+        "lineHeight": 1.14,
+        "letterSpacing": 0,
+        "wordSpacing": 0,
+        "textTransform": "none",
+        "textDecoration": "none",
+        "highlight": null,
+        "shadow": "none",
+        "strokeColor": null,
+        "strokeWidth": 0,
+        "padding": 24,
+        "bgColor": null,
+        "bgOpacity": 0,
+        "borderRadius": 0,
+        "autoFit": true,
+        "textIndent": 0,
+        "direction": "ltr",
+        "whiteSpace": "normal"
+      },
+      "template": "{{version}}",
+      "visible": true,
+      "locked": false
+    }
+  ]
+}

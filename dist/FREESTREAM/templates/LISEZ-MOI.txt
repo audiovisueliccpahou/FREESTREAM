@@ -1,0 +1,29 @@
+MODÈLES DE DÉPART — FREESTREAM
+==============================
+
+Ces fichiers JSON sont des designs prêts à l'emploi. Ils ne sont PAS chargés
+automatiquement : ce sont des points de départ que vous pouvez importer ou
+recopier dans l'onglet « Designs » de la régie.
+
+  modele-plein.json        gabarit plein écran (canevas 7680×4320, 4 calques)
+  modele-bas.json          gabarit bas centré (zone de texte plus basse)
+  modele-lowerthird.json   gabarit de lowerthird / contenu personnalisé
+
+UTILISATION
+-----------
+1. Ouvrez la régie → onglet « Designs ».
+2. Choisissez l'outil et le format (plein / bas).
+3. Cliquez sur « Copier depuis le plein écran » pour hériter du gabarit plein,
+   puis ajustez la zone de texte, la police, la taille et la position.
+4. Pour un fond personnalisé : créez votre visuel (coins carrés, rectangle…)
+   dans Photoshop, exportez-le en PNG avec transparence, déposez-le dans
+   donnees/medias/ puis sélectionnez-le comme fond dans l'éditeur.
+
+RÈGLE IMPORTANTE
+-----------------
+L'éditeur et les sorties OBS utilisent le MÊME moteur de rendu. Les zones de
+texte sont mesurées réellement et la police est réduite automatiquement pour
+tenir dans la zone : aucun débordement n'est possible dans OBS.
+
+Tous les fonds vides sont transparents : une caméra peut passer derrière si
+vous cochez « Fonds transparents » dans la source navigateur OBS.

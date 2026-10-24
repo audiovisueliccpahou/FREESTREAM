@@ -1,0 +1,15 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FREESTREAM — Sortie Cœur</title>
+<link rel="stylesheet" href="../styles/output.css">
+<style>
+  /* Badge discret : visible dans la régie, masqué à l'antenne (OBS). */
+  #coeur-tag{position:fixed;left:14px;bottom:12px;font:700 12px/1 system-ui,sans-serif;
+    letter-spacing:.12em;color:#ffd479;opacity:.75;z-index:99;pointer-events:none}
+  body.obs #coeur-tag{display:none}
+</style></head>
+<body data-type="coeur" data-tool="chants">
+<div id="root"></div><div id="overlay"></div><div id="coeur-tag">♥ CŒUR</div>
+<script type="module" src="./output.js"></script>
+<script>if(new URLSearchParams(location.search).get('obs')==='1')document.body.classList.add('obs');</script>
+</body></html>

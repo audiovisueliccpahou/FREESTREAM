@@ -1,0 +1,126 @@
+{
+  "id": "lowerthird:bas",
+  "name": "Lowerthird — Bas centré",
+  "tool": "lowerthird",
+  "type": "bas",
+  "canvas": {
+    "w": 7680,
+    "h": 4320
+  },
+  "background": {
+    "kind": "transparent",
+    "color": "#000000",
+    "src": null,
+    "fit": "cover",
+    "blur": 0,
+    "brightness": 1,
+    "saturate": 1,
+    "opacity": 1,
+    "muted": true,
+    "loop": true
+  },
+  "transition": {
+    "type": "slide-left",
+    "duration": 380
+  },
+  "layers": [
+    {
+      "id": "img-mvlo8rfz-j",
+      "type": "image",
+      "box": {
+        "x": 900,
+        "y": 3180,
+        "w": 5880,
+        "h": 760
+      },
+      "src": null,
+      "fit": "cover",
+      "opacity": 1,
+      "visible": true
+    },
+    {
+      "id": "txt-mvlo8rfz-k",
+      "type": "text",
+      "role": "title",
+      "box": {
+        "x": 1080,
+        "y": 3260,
+        "w": 5520,
+        "h": 300
+      },
+      "style": {
+        "fontFamily": "\"FREESTREAM Sans\", \"Segoe UI\", \"Inter\", \"Helvetica Neue\", Arial, sans-serif",
+        "fontSize": 196,
+        "minFontSize": 48,
+        "fontWeight": 800,
+        "fontStyle": "normal",
+        "color": "#FFFFFF",
+        "opacity": 1,
+        "align": "left",
+        "valign": "middle",
+        "lineHeight": 1.14,
+        "letterSpacing": 0,
+        "wordSpacing": 0,
+        "textTransform": "uppercase",
+        "textDecoration": "none",
+        "highlight": null,
+        "shadow": "0 0.02em 0.12em rgba(0,0,0,.85)",
+        "strokeColor": null,
+        "strokeWidth": 0,
+        "padding": 24,
+        "bgColor": null,
+        "bgOpacity": 0,
+        "borderRadius": 0,
+        "autoFit": true,
+        "textIndent": 0,
+        "direction": "ltr",
+        "whiteSpace": "normal"
+      },
+      "template": "{{title}}",
+      "visible": true,
+      "locked": false
+    },
+    {
+      "id": "txt-mvlo8rfz-l",
+      "type": "text",
+      "role": "subtitle",
+      "box": {
+        "x": 1080,
+        "y": 3580,
+        "w": 5520,
+        "h": 220
+      },
+      "style": {
+        "fontFamily": "\"FREESTREAM Sans\", \"Segoe UI\", \"Inter\", \"Helvetica Neue\", Arial, sans-serif",
+        "fontSize": 128,
+        "minFontSize": 48,
+        "fontWeight": 500,
+        "fontStyle": "normal",
+        "color": "#DCE6F5",
+        "opacity": 1,
+        "align": "left",
+        "valign": "middle",
+        "lineHeight": 1.14,
+        "letterSpacing": 0,
+        "wordSpacing": 0,
+        "textTransform": "none",
+        "textDecoration": "none",
+        "highlight": null,
+        "shadow": "none",
+        "strokeColor": null,
+        "strokeWidth": 0,
+        "padding": 24,
+        "bgColor": null,
+        "bgOpacity": 0,
+        "borderRadius": 0,
+        "autoFit": true,
+        "textIndent": 0,
+        "direction": "ltr",
+        "whiteSpace": "normal"
+      },
+      "template": "{{subtitle}}",
+      "visible": true,
+      "locked": false
+    }
+  ]
+}

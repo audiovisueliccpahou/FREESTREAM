@@ -1,0 +1,144 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FREESTREAM — Régie Minuteur</title>
+<link rel="stylesheet" href="../styles/base.css">
+<link rel="stylesheet" href="../styles/regie.css">
+<style>
+  body { display:block; padding:24px; max-width:1100px; margin:0 auto; }
+  .panel { background:var(--p-2); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:18px; }
+  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .item { display:grid; grid-template-columns:32px 1fr 120px 100px 90px; gap:8px; align-items:center; padding:8px; border-bottom:1px solid var(--line); }
+  .item.active { background:rgba(255,212,121,.12); border-radius:8px; }
+  .item input { width:100%; }
+  .bigtime { font-size:56px; font-weight:800; font-variant-numeric:tabular-nums; }
+  .bigtime.over { color:var(--danger); }
+  .deltas button { min-width:64px; }
+  .deltas .minus { color:#ffb4b4; border-color:#5b3030; }
+</style></head>
+<body>
+<h1 style="margin:0 0 4px">⏱ Régie Minuteur</h1>
+<p class="muted">Trame de l'événement — régie indépendante, utilisable sur un autre poste du réseau local.</p>
+
+<div class="panel">
+  <div class="row" style="justify-content:space-between">
+    <div><div class="muted small">Temps restant</div><div id="clock" class="bigtime">--:--</div></div>
+    <div class="row">
+      <button id="btn-prev" class="btn">◀ Précédent</button>
+      <button id="btn-toggle" class="btn primary">▶ Démarrer</button>
+      <button id="btn-next" class="btn primary">Suivant ▶</button>
+      <button id="btn-stop" class="btn danger">■ Arrêter</button>
+    </div>
+  </div>
+  <div class="sep"></div>
+  <div class="muted small" style="margin-bottom:8px">Ajouter / retirer du temps EN DIRECT</div>
+  <div class="row deltas" id="deltas">
+    <button class="btn minus" data-ms="-1800000">−30m</button>
+    <button class="btn minus" data-ms="-600000">−10m</button>
+    <button class="btn minus" data-ms="-300000">−5m</button>
+    <button class="btn minus" data-ms="-60000">−1m</button>
+    <button class="btn minus" data-ms="-30000">−30s</button>
+    <button class="btn" data-ms="30000">+30s</button>
+    <button class="btn" data-ms="60000">+1m</button>
+    <button class="btn" data-ms="300000">+5m</button>
+    <button class="btn" data-ms="600000">+10m</button>
+    <button class="btn" data-ms="1800000">+30m</button>
+    <button class="btn" data-ms="3600000">+1h</button>
+  </div>
+  <div class="sep"></div>
+  <label class="chk"><input type="checkbox" id="visible"> Afficher la sortie minuteur (sinon : points clignotants)</label>
+</div>
+
+<div class="panel">
+  <div class="row" style="justify-content:space-between;margin-bottom:12px">
+    <strong>Trame de l'événement</strong>
+    <div class="row">
+      <button id="btn-add" class="btn">+ Ajouter un temps</button>
+      <button id="btn-import" class="btn">Importer…</button>
+      <button id="btn-export" class="btn">Exporter</button>
+      <button id="btn-save" class="btn primary">Enregistrer</button>
+    </div>
+  </div>
+  <div class="item muted small" style="font-weight:600"><span>#</span><span>Titre</span><span>Durée (min)</span><span>Note</span><span></span></div>
+  <div id="items"></div>
+</div>
+
+<div class="panel">
+  <div class="muted small">Aperçu de la sortie (noir + décompte)</div>
+  <iframe id="preview" src="../outputs/minuteur.html?preview=1" style="width:100%;aspect-ratio:16/9;border:1px solid var(--line);border-radius:10px;background:#000;margin-top:10px"></iframe>
+  <div class="row" style="margin-top:10px">
+    <a class="btn" href="../index.html" target="_blank">← Toutes les sorties</a>
+    <span class="muted small">Lien OBS : <code id="obsurl"></code></span>
+  </div>
+</div>
+<input type="file" id="file" accept=".json,.txt,.csv" hidden>
+
+<script type="module">
+import { store } from '../core/store.js';
+import { uid } from '../core/defaults.js';
+import { fmt, remainingMs } from '../core/timer.js';
+
+await store.init({ role:'regie', id:'regie-minuteur' });
+const $ = s => document.querySelector(s);
+const itemsEl = $('#items');
+let local = [...(store.state.minuteur?.items || [])];
+
+function renderItems(){
+  itemsEl.innerHTML = '';
+  local.forEach((it,i) => {
+    const row = document.createElement('div');
+    row.className = 'item' + (i === store.state.minuteur.index ? ' active' : '');
+    row.innerHTML = `<span class="muted">${i+1}</span>
+      <input class="inp t" value="${esc(it.title)}" placeholder="Titre du moment">
+      <input class="inp d" type="number" min="0" step="0.5" value="${(it.durationMs/60000).toFixed(1)}">
+      <input class="inp n" value="${esc(it.note||'')}" placeholder="Note">
+      <span class="row"><button class="btn xs go">▶</button><button class="btn xs rm">✕</button></span>`;
+    const [t,d,n] = [row.querySelector('.t'),row.querySelector('.d'),row.querySelector('.n')];
+    t.oninput = () => { it.title = t.value; save(); };
+    d.onchange = () => { it.durationMs = Math.max(0, Number(d.value)||0) * 60000; save(); };
+    n.oninput = () => { it.note = n.value; save(); };
+    row.querySelector('.go').onclick = () => go(i);
+    row.querySelector('.rm').onclick = () => { local.splice(i,1); renderItems(); save(); };
+    itemsEl.appendChild(row);
+  });
+}
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function save(){ store.patch({ minuteur:{ items: local } }); }
+
+function go(i){
+  if (i < 0 || i >= local.length) return;
+  store.patch({ minuteur:{ index:i, running:true, visible:true, startedAt:Date.now(), baseMs:Number(local[i].durationMs)||0, offsetMs:0 } });
+  renderItems();
+}
+function toggle(){
+  const m = store.state.minuteur;
+  if (!m.running) store.patch({ minuteur:{ running:true, startedAt:Date.now(), visible:true, baseMs:Number(local[m.index]?.durationMs)||0 } });
+  else store.patch({ minuteur:{ running:false, pausedMs: remainingMs(store.state), baseMs: Math.max(0, remainingMs(store.state)||0), offsetMs:0 } });
+}
+
+$('#btn-add').onclick = () => { local.push({ id:uid('t'), title:'Nouveau moment', durationMs:600000, note:'' }); renderItems(); save(); };
+$('#btn-prev').onclick = () => go((store.state.minuteur.index ?? 0) - 1);
+$('#btn-next').onclick = () => go((store.state.minuteur.index ?? -1) + 1);
+$('#btn-toggle').onclick = toggle;
+$('#btn-stop').onclick = () => store.patch({ minuteur:{ running:false, visible:false, index:-1, offsetMs:0 } });
+$('#deltas').onclick = e => { const b = e.target.closest('button[data-ms]'); if (b) store.patch({ minuteur:{ offsetMs:(store.state.minuteur.offsetMs||0) + Number(b.dataset.ms) } }); };
+$('#visible').onchange = e => store.patch({ minuteur:{ visible:e.target.checked } });
+$('#visible').checked = !!store.state.minuteur.visible;
+$('#btn-export').onclick = () => dl('trame-freestream.json', JSON.stringify({ items:local },null,2));
+$('#btn-import').onclick = () => $('#file').click();
+$('#file').onchange = async e => { const f = e.target.files[0]; if(!f) return;
+  try { const d = JSON.parse(await f.text()); if(Array.isArray(d.items)){ local = d.items.map(x=>({id:x.id||uid('t'),title:x.title||'',durationMs:Number(x.durationMs)||600000,note:x.note||''})); renderItems(); save(); } } catch(err){ alert('Import impossible : '+err.message); } };
+$('#obsurl').textContent = location.origin + '/outputs/minuteur.html';
+function dl(name, text){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:'application/json'})); a.download=name; a.click(); }
+
+function paint(){
+  const m = store.state.minuteur;
+  const r = remainingMs(store.state);
+  const c = $('#clock');
+  c.textContent = (m.index>=0 && m.visible) ? fmt(r) : '--:--';
+  c.classList.toggle('over', r !== null && r < 0);
+  $('#btn-toggle').textContent = m.running ? '⏸ Pause' : '▶ Démarrer';
+  $('#visible').checked = !!m.visible;
+  if (m.items?.length !== local.length || (m.items && m.items.some((x,i)=>x.title!==local[i]?.title))) { local = [...(m.items||[])]; renderItems(); }
+}
+renderItems(); paint(); store.on(paint); setInterval(paint,220);
+</script></body></html>

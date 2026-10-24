@@ -1,0 +1,127 @@
+{
+  "id": "bible:bas",
+  "name": "Bible — Bas centré",
+  "tool": "bible",
+  "type": "bas",
+  "canvas": {
+    "w": 7680,
+    "h": 4320
+  },
+  "background": {
+    "kind": "transparent",
+    "color": "#000000",
+    "src": null,
+    "fit": "cover",
+    "blur": 0,
+    "brightness": 1,
+    "saturate": 1,
+    "opacity": 1,
+    "muted": true,
+    "loop": true
+  },
+  "transition": {
+    "type": "slide-up",
+    "duration": 280
+  },
+  "layers": [
+    {
+      "id": "shp-mvlo8rfy-5",
+      "type": "shape",
+      "box": {
+        "x": 520,
+        "y": 3140,
+        "w": 6640,
+        "h": 940
+      },
+      "fill": "rgba(6,10,20,.62)",
+      "radius": 40,
+      "border": null,
+      "opacity": 1,
+      "visible": true
+    },
+    {
+      "id": "txt-mvlo8rfy-6",
+      "type": "text",
+      "role": "reference",
+      "box": {
+        "x": 660,
+        "y": 3200,
+        "w": 6360,
+        "h": 200
+      },
+      "style": {
+        "fontFamily": "\"FREESTREAM Sans\", \"Segoe UI\", \"Inter\", \"Helvetica Neue\", Arial, sans-serif",
+        "fontSize": 132,
+        "minFontSize": 48,
+        "fontWeight": 700,
+        "fontStyle": "normal",
+        "color": "#FFD479",
+        "opacity": 1,
+        "align": "center",
+        "valign": "middle",
+        "lineHeight": 1.14,
+        "letterSpacing": 0,
+        "wordSpacing": 0,
+        "textTransform": "uppercase",
+        "textDecoration": "none",
+        "highlight": null,
+        "shadow": "0 0.02em 0.12em rgba(0,0,0,.85)",
+        "strokeColor": null,
+        "strokeWidth": 0,
+        "padding": 24,
+        "bgColor": null,
+        "bgOpacity": 0,
+        "borderRadius": 0,
+        "autoFit": true,
+        "textIndent": 0,
+        "direction": "ltr",
+        "whiteSpace": "normal"
+      },
+      "template": "{{reference}}",
+      "visible": true,
+      "locked": false
+    },
+    {
+      "id": "txt-mvlo8rfy-7",
+      "type": "text",
+      "role": "content",
+      "box": {
+        "x": 660,
+        "y": 3420,
+        "w": 6360,
+        "h": 600
+      },
+      "style": {
+        "fontFamily": "\"FREESTREAM Sans\", \"Segoe UI\", \"Inter\", \"Helvetica Neue\", Arial, sans-serif",
+        "fontSize": 186,
+        "minFontSize": 120,
+        "fontWeight": 700,
+        "fontStyle": "normal",
+        "color": "#FFFFFF",
+        "opacity": 1,
+        "align": "center",
+        "valign": "middle",
+        "lineHeight": 1.14,
+        "letterSpacing": 0,
+        "wordSpacing": 0,
+        "textTransform": "none",
+        "textDecoration": "none",
+        "highlight": null,
+        "shadow": "0 0.02em 0.12em rgba(0,0,0,.85)",
+        "strokeColor": null,
+        "strokeWidth": 0,
+        "padding": 24,
+        "bgColor": null,
+        "bgOpacity": 0,
+        "borderRadius": 0,
+        "autoFit": true,
+        "textIndent": 0,
+        "direction": "ltr",
+        "whiteSpace": "normal"
+      },
+      "template": "{{content}}",
+      "visible": true,
+      "locked": false
+    }
+  ]
+}

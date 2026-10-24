@@ -1,0 +1,144 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FREESTREAM — Sorties & liens OBS</title>
+<link rel="stylesheet" href="styles/base.css">
+<style>
+  body{padding:28px;max-width:1360px;margin:0 auto}
+  header{display:flex;align-items:center;gap:16px;margin-bottom:8px;flex-wrap:wrap}
+  header .logo{font-size:30px;font-weight:800;letter-spacing:.12em;color:var(--accent)}
+  header .logo small{display:block;font-size:10px;letter-spacing:.28em;color:var(--muted);font-weight:600;margin-top:-3px}
+  .hero{background:linear-gradient(135deg,#151d2d,#0d121c);border:1px solid var(--line);border-radius:18px;padding:22px;margin-bottom:20px}
+  .hero h1{font-size:26px;margin-bottom:8px}
+  .sec{margin:26px 0 12px;display:flex;align-items:center;gap:10px}
+  .sec h2{margin:0;font-size:15px;letter-spacing:.04em;text-transform:uppercase;color:var(--txt-2)}
+  .sec .line{flex:1;height:1px;background:var(--line)}
+  .out{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:14px 16px;border-radius:12px;border:1px solid var(--line);background:var(--p-1);margin-bottom:9px}
+  .out.principal{border-color:rgba(255,212,121,.4);background:linear-gradient(90deg,rgba(255,212,121,.07),var(--p-1))}
+  .out .nm{font-weight:700;font-size:14px;display:flex;align-items:center;gap:9px}
+  .out .url{font-family:var(--fmono);font-size:12px;color:var(--accent-2);margin-top:5px;word-break:break-all;user-select:all}
+  .out .meta{font-size:11px;color:var(--muted);margin-top:4px}
+  .out .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .badge8k{font-size:9px;font-weight:800;letter-spacing:.08em;padding:2px 7px;border-radius:5px;background:rgba(110,168,255,.16);color:#a9cbff;border:1px solid rgba(110,168,255,.3)}
+  .grp{display:grid;grid-template-columns:repeat(auto-fill,minmax(430px,1fr));gap:10px}
+  .net{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .net code{font-size:12px}
+  .dotlive{width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:5px}
+  .dotlive.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  .foot{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+</style></head>
+<body>
+<header>
+  <div class="logo">FREESTREAM<small>SORTIES & LIENS OBS</small></div>
+  <div class="spacer"></div>
+  <span id="status" class="pill">Connexion…</span>
+  <a class="btn primary lg" href="regie.html">🎛 Ouvrir la régie</a>
+</header>
+
+<div class="hero">
+  <h1>Bienvenue dans FREESTREAM</h1>
+  <p class="muted" style="margin:0 0 14px">Tout est <strong>100 % hors ligne</strong>. Copiez un lien ci-dessous dans <em>OBS → Source → Navigateur</em>, réglez la largeur/hauteur (8K par défaut : <code>7680 × 4320</code>), et pilotez tout depuis la régie.</p>
+  <div class="row">
+    <span class="pill acc">Fond transparent par défaut</span>
+    <span class="pill acc">Moteur de rendu unique = aperçu identique à OBS</span>
+    <span class="pill acc">Vidéo cherchable (HTTP Range)</span>
+  </div>
+  <div class="net" id="net"></div>
+</div>
+
+<div class="sec"><h2>① Sorties universelles</h2><div class="line"></div><span class="badge8k">8K · 7680×4320</span></div>
+<div id="universal" class="grp"></div>
+
+<div class="sec"><h2>② Sortie Cœur — chants + section suivante</h2><div class="line"></div><span class="badge8k">8K · 7680×4320</span></div>
+<div id="coeur" class="grp"></div>
+<p class="muted small" style="margin:-2px 0 0">Le couplet courant s'affiche en très gros caractères et la <strong>section suivante</strong> est annoncée en bas. Cette sortie reste affichée même si la Bible ou un média prend le plein écran (ajoutez <code>?sticky=0</code> pour changer ce comportement).</p>
+
+<div class="sec"><h2>③ Sorties par outil</h2><div class="line"></div><span class="muted small">Un lien dédié par outil et par format</span></div>
+<div id="pertool" class="grp"></div>
+
+<div class="sec"><h2>④ Vues spéciales</h2><div class="line"></div></div>
+<div id="special" class="grp"></div>
+
+<div class="sec"><h2>⑤ Sorties personnalisées</h2><div class="line"></div><button class="btn xs" id="newout">+ Créer</button></div>
+<div id="custom" class="grp"></div>
+
+<div class="sec"><h2>⑥ Régies indépendantes</h2><div class="line"></div></div>
+<div class="grp">
+  <div class="out"><div><div class="nm">⏱ Régie Minuteur</div><div class="url" id="u-min"></div><div class="meta">Trame de l'événement, décompte, ajout/retrait de temps en direct.</div></div><div class="acts"><a class="btn" id="a-min" href="regies/minuteur.html" target="_blank">Ouvrir</a></div></div>
+  <div class="out"><div><div class="nm">✉ Régie Orateur / Pasteur</div><div class="url" id="u-orateur-regie"></div><div class="meta">Messages 15 s, coupure immédiate, contenu plein écran en incrustation.</div></div><div class="acts"><a class="btn" href="regie.html?tab=orateur" target="_blank">Ouvrir</a></div></div>
+</div>
+
+<div class="foot">
+  <strong>Raccourcis clavier :</strong>
+  <kbd>←</kbd><kbd>→</kbd> naviguer · <kbd>Espace</kbd> suivant · <kbd>Entrée</kbd> valider ·
+  <kbd>Échap</kbd> masquer · <kbd>1</kbd>–<kbd>4</kbd> outils · <kbd>F</kbd> envoyer plein ·
+  <kbd>S</kbd> envoyer bas · <kbd>B</kbd> noir · <kbd>Ctrl</kbd>+<kbd>Z</kbd> revenir<br><br>
+  Dossier du projet : <code id="rootpath">…</code> — <span id="ver"></span>
+</div>
+
+<script type="module">
+import { store } from './core/store.js';
+import { TOOLS } from './core/config.js';
+await store.init({ role:'regie', id:'landing' });
+const $ = s => document.querySelector(s);
+const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function card(o, principal=false){
+  const url = location.origin + o.path;
+  const live = Object.keys(store.state.presence||{}).some(k => k.startsWith(o.type+':') && (o.tool==='*' || store.state.presence[k]?.tool === o.tool || k.includes(':'+o.tool+':')));
+  return `<div class="out ${principal?'principal':''} ${o.custom?'':''}">
+    <div><div class="nm"><span class="dotlive ${live?'on':''}"></span>${esc(o.name)}</div>
+      <div class="url">${esc(url)}</div>
+      <div class="meta">${o.w} × ${o.h} px · ${o.type==='bas'?'bas centré':o.type==='coeur'?'cœur · chants':o.type==='special'?'vue spéciale':'plein écran'} · ${live?'<span style="color:var(--ok)">connectée à OBS</span>':'en attente de connexion'}</div></div>
+    <div class="acts"><button class="btn xs copy" data-u="${esc(url)}">📋 Copier</button>
+      <a class="btn xs" href="${esc(o.path)}" target="_blank">👁 Tester</a>
+      ${o.custom?`<button class="btn xs danger del" data-id="${esc(o.id)}">✕</button>`:''}</div></div>`;
+}
+function paint(){
+  const outs = store.state.outputs || [];
+  $('#universal').innerHTML = outs.filter(o=>o.tool==='*' && ['plein','bas'].includes(o.type)).map(o=>card(o,true)).join('');
+  $('#coeur').innerHTML = outs.filter(o=>o.type==='coeur').map(o=>card(o,true)).join('')
+    || '<div class="empty">Sortie Cœur absente — réinitialisez les sorties par défaut.</div>';
+  $('#pertool').innerHTML = outs.filter(o=>o.tool!=='*' && ['plein','bas'].includes(o.type)).map(o=>card(o)).join('');
+  $('#special').innerHTML = outs.filter(o=>o.type==='special').map(o=>card(o)).join('');
+  const cust = outs.filter(o=>o.custom);
+  $('#custom').innerHTML = cust.length ? cust.map(o=>card(o)).join('') : '<div class="empty">Aucune sortie personnalisée. Cliquez sur « + Créer » pour un écran portrait ou une taille précise.</div>';
+  $('#u-min').textContent = location.origin + '/regies/minuteur.html';
+  $('#u-orateur-regie').textContent = location.origin + '/regie.html?tab=orateur';
+  $('#status').className = 'pill ' + (store.connected?'ok':'off');
+  $('#status').textContent = store.connected ? '● Serveur local connecté' : '● Mode hors ligne (fichiers)';
+}
+paint(); store.on(paint);
+
+document.addEventListener('click', async e => {
+  const c = e.target.closest('.copy');
+  if (c) { try { await navigator.clipboard.writeText(c.dataset.u); toast('Lien copié — collez-le dans OBS'); } catch { prompt('Copiez ce lien :', c.dataset.u); } }
+  const d = e.target.closest('.del');
+  if (d && confirm('Supprimer cette sortie personnalisée ?')) store.patch({ outputs: (store.state.outputs||[]).filter(o=>o.id!==d.dataset.id) });
+});
+$('#newout').onclick = () => {
+  const name = prompt('Nom de la sortie :', 'Écran portrait'); if (!name) return;
+  const w = Number(prompt('Largeur (px) :', '2160')); const h = Number(prompt('Hauteur (px) :', '3840'));
+  if (!w || !h) return;
+  const id = 'out-' + Date.now().toString(36);
+  const outs = [...(store.state.outputs||[]), { id, name, type:'custom', tool:'*', w, h, path:`/outputs/custom.html?id=${id}`, custom:true, enabled:true, from:'plein' }];
+  // Le design de la nouvelle sortie est COPIÉ du plein écran jusqu'à modification.
+  const designs = { ...(store.state.designs||{}), [`out:${id}`]: cloneDesign(store.state.designs?.['bible:plein'], w, h, id) };
+  store.patch({ outputs:outs, designs });
+  toast('Sortie créée — son design est copié du plein écran. Modifiez-le dans l\'onglet Designs.');
+};
+function cloneDesign(src, w, h, outId){
+  const s = JSON.parse(JSON.stringify(src || {}));
+  const sx = w/7680, sy = h/4320, k = Math.min(sx, sy);
+  s.canvas = { w, h };
+  for (const l of s.layers||[]) if (l.box) l.box = { x:Math.round(l.box.x*sx), y:Math.round(l.box.y*sy), w:Math.round(l.box.w*sx), h:Math.round(l.box.h*sy) };
+  if (s.background?.box) s.background.box = {x:0,y:0,w,h};
+  s.id = 'out:'+outId; s.name = 'Design personnalisé';
+  for (const l of s.layers||[]) if (l.style?.fontSize) l.style.fontSize = Math.round(l.style.fontSize*k);
+  return s;
+}
+function toast(m){ const d=document.createElement('div'); d.className='toast'; d.textContent=m; document.body.appendChild(d); setTimeout(()=>d.remove(),2600); }
+
+try { const info = await (await fetch('/api/info')).json(); $('#rootpath').textContent = info.root; $('#ver').textContent = 'Node '+info.node+' · LibreOffice '+(info.soffice?'détecté':'absent');
+  $('#net').innerHTML = (info.lan||[]).map(ip=>`<span class="pill">Réseau local : <code>http://${ip}:${info.port}</code></span>`).join('') || '<span class="pill">Réseau local : aucun</span>';
+} catch { $('#net').innerHTML = '<span class="pill off">Serveur indisponible — mode fichiers</span>'; }
+</script></body></html>

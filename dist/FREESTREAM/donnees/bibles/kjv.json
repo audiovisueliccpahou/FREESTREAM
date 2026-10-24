@@ -1,0 +1,46 @@
+{
+  "_meta": {
+    "id": "kjv",
+    "name": "King James Version",
+    "short": "KJV",
+    "lang": "en",
+    "license": "Domaine public",
+    "note": "Jeu de démonstration anglais pour valider l'affichage simultané de deux versions."
+  },
+  "books": {
+    "Esther": {
+      "8": {
+        "9": "Then were the king's scribes called at that time in the third month, that is, the month Sivan, on the three and twentieth day thereof; and it was written according to all that Mordecai commanded unto the Jews, and to the lieutenants, and the deputies and rulers of the provinces which are from India unto Ethiopia, an hundred twenty and seven provinces, unto every province according to the writing thereof, and unto every people after their language, and to the Jews according to their writing, and according to their language."
+      }
+    },
+    "Jean": {
+      "3": {
+        "16": "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.",
+        "17": "For God sent not his Son into the world to condemn the world; but that the world through him might be saved."
+      }
+    },
+    "Psaumes": {
+      "23": {
+        "1": "The LORD is my shepherd; I shall not want.",
+        "2": "He maketh me to lie down in green pastures: he leadeth me beside the still waters.",
+        "3": "He restoreth my soul: he leadeth me in the paths of righteousness for his name's sake.",
+        "4": "Yea, though I walk through the valley of the shadow of death, I will fear no evil: for thou art with me; thy rod and thy staff they comfort me.",
+        "5": "Thou preparest a table before me in the presence of mine enemies: thou anointest my head with oil; my cup runneth over.",
+        "6": "Surely goodness and mercy shall follow me all the days of my life: and I will dwell in the house of the LORD for ever."
+      }
+    },
+    "Genèse": {
+      "1": { "1": "In the beginning God created the heaven and the earth.",
+        "3": "And God said, Let there be light: and there was light." }
+    },
+    "1 Corinthiens": {
+      "13": { "13": "And now abideth faith, hope, charity, these three; but the greatest of these is charity." }
+    },
+    "Philippiens": {
+      "4": { "13": "I can do all things through Christ which strengtheneth me." }
+    },
+    "Matthieu": {
+      "6": { "9": "After this manner therefore pray ye: Our Father which art in heaven, Hallowed be thy name." }
+    }
+  }
+}

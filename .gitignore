@@ -1,0 +1,18 @@
+# Dépendances de développement (le livrable n'en a PAS besoin)
+node_modules/
+__pycache__/
+*.pyc
+
+# Fichiers système / temporaires
+.DS_Store
+Thumbs.db
+*.log
+donnees/etat/*.tmp
+donnees/medias/.cache/
+
+# Captures générées pendant les tests (gardées dans docs/captures/)
+tests/screenshot-*.png
+
+# REMARQUE VOLONTAIRE : dist/ N'est PAS ignoré.
+# dist/FREESTREAM est le dossier livrable prêt à copier sur C:\ — il doit
+# faire partie du dépôt pour être réellement livré à l'utilisateur.

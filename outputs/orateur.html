@@ -1,0 +1,23 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FREESTREAM — Vue orateur</title>
+<link rel="stylesheet" href="../styles/output.css">
+<style>
+  :root { --fs-accent:#FFD479; }
+  body { background:#05070d !important; transition:background .35s ease; }
+  #root { transition: transform .5s cubic-bezier(.2,.8,.2,1), border-radius .5s ease, box-shadow .5s ease; transform-origin: bottom right; }
+  body.msg-active #root { transform: translate(-2.5%, -6%) scale(.30); border-radius: 28px; overflow:hidden; box-shadow:0 20px 80px #000; }
+  #message { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:6% 8%; opacity:0; pointer-events:none;
+             transform: translateY(4%); transition:opacity .45s ease, transform .45s cubic-bezier(.2,.8,.2,1);
+             background:radial-gradient(ellipse at center, rgba(20,28,46,.92), rgba(5,7,13,.97)); }
+  body.msg-active #message { opacity:1; transform:translateY(0); }
+  .msg-icon { font-size: clamp(40px, 6vw, 120px); margin-right:.4em; opacity:.8; }
+  .msg-text { font-size: clamp(34px, 5.4vw, 110px); line-height:1.24; font-weight:700; color:#fff; white-space:pre-wrap; max-width:82%; }
+  #badge { position:absolute; top:5%; left:5%; font:700 clamp(20px,2.4vw,48px)/1 sans-serif; color:#05070d; background:var(--fs-accent); padding:.35em .7em; border-radius:999px; display:none; }
+  body.msg-active::after { content:'MESSAGE'; position:absolute; bottom:4%; left:5%; font:700 clamp(16px,1.6vw,32px)/1 sans-serif; letter-spacing:.25em; color:var(--fs-accent); opacity:.75; }
+</style></head>
+<body data-type="special">
+<div id="root"></div>
+<div id="badge"></div>
+<div id="message"><div id="message-body" style="display:flex;align-items:center;width:100%;justify-content:center"></div></div>
+<script type="module" src="./orateur.js"></script></body></html>

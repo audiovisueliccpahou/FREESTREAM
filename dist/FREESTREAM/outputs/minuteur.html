@@ -1,0 +1,26 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FREESTREAM — Minuteur</title>
+<link rel="stylesheet" href="../styles/output.css">
+<style>
+  body { background:#000 !important; font-family:"FREESTREAM Sans","Segoe UI",Arial,sans-serif; }
+  .wrap { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2.4vh; }
+  #time { font-size:min(30vh, 17vw); font-weight:800; letter-spacing:-.03em; color:#fff; line-height:1; font-variant-numeric:tabular-nums; text-shadow:0 0 60px rgba(255,255,255,.13); }
+  #time.over { color:#ff5252; text-shadow:0 0 90px rgba(255,60,60,.5); animation:pulse 1s ease-in-out infinite; }
+  #label { font-size:min(6.5vh,3.6vw); font-weight:600; color:#cfd8e6; text-align:center; max-width:84vw; }
+  #next { position:absolute; bottom:6vh; font-size:min(3.4vh,1.9vw); color:#667085; letter-spacing:.04em; }
+  #dots { display:flex; gap:min(4vh,2.4vw); }
+  #dots i { width:min(4vh,2.4vw); height:min(4vh,2.4vw); border-radius:50%; background:#4b5565; animation:blink 1.25s ease-in-out infinite; }
+  #dots i:nth-child(2){animation-delay:.22s} #dots i:nth-child(3){animation-delay:.44s}
+  @keyframes blink { 0%,100%{opacity:.14; transform:scale(.8)} 50%{opacity:1; transform:scale(1)} }
+  @keyframes pulse { 50%{ opacity:.72 } }
+  body.overtime::before { content:''; position:absolute; inset:0; box-shadow:inset 0 0 10vh rgba(255,40,40,.18); pointer-events:none; }
+</style></head>
+<body data-type="special">
+<div class="wrap">
+  <div id="time"></div>
+  <div id="label"></div>
+  <div id="dots"><i></i><i></i><i></i></div>
+  <div id="next"></div>
+</div>
+<script type="module" src="./minuteur.js"></script></body></html>

@@ -1,0 +1,16 @@
+{
+  "id": "lt-mvlmu5fj",
+  "name": "Annonce test",
+  "titleHtml": "Bienvenue à l'église",
+  "subtitleHtml": "Culte du dimanche · 10h00",
+  "duration": 8,
+  "transition": "slide-left",
+  "outTransition": "fade",
+  "transitionDuration": 420,
+  "outDuration": 320,
+  "target": "bas",
+  "background": null,
+  "bgKind": "transparent",
+  "createdAt": 1792800010495,
+  "updatedAt": 1792805088559
+}

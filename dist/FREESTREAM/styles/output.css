@@ -1,0 +1,26 @@
+/* FREESTREAM — feuille de style commune à TOUTES les sorties OBS.
+   Fond transparent par défaut : la caméra reste visible si rien n'est prévu. */
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0; width: 100%; height: 100%;
+  background: transparent !important;
+  overflow: hidden; overscroll-behavior: none;
+  -webkit-user-select: none; user-select: none;
+}
+body { font-family: "FREESTREAM Sans", "Segoe UI", Inter, Arial, sans-serif; }
+#root, #overlay, .fs-layer { position: absolute; inset: 0; }
+#overlay { pointer-events: none; z-index: 10; }
+.fs-viewport { position: absolute; inset: 0; overflow: hidden; background: transparent; }
+.fs-stage { position: absolute; top: 0; left: 0; transform-origin: top left; will-change: transform; }
+.fs-bg, .fs-static, .fs-text { position: absolute; inset: 0; }
+.fs-static { pointer-events: none; }
+.fs-text-layer { will-change: transform, opacity; }
+.fs-text-inner { word-break: normal; overflow-wrap: break-word; hyphens: auto; }
+.fs-text-inner mark { background: var(--fs-highlight, #ffd479); color: inherit; padding: 0 .06em; border-radius: .12em; }
+.fs-text-inner sup, .fs-text-inner sub { font-size: .62em; }
+.hidden { display: none !important; }
+.fs-overflow-warn { position: absolute; top: 12px; right: 12px; z-index: 99; background: #c62828; color: #fff; font: 700 14px/1.2 sans-serif; padding: 8px 12px; border-radius: 8px; }
+iframe, video { display: block; }
+video { background: #000; }
+@font-face { font-family: "FREESTREAM Sans"; src: local("Segoe UI"), local("Inter"), local("Arial"); font-display: swap; }
