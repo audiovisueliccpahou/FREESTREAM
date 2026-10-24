@@ -1,21 +1,21 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 <#
-  FREESTREAM — serveur Windows ZÉRO INSTALLATION.
-  PowerShell 5.1 est présent dans TOUTES les versions de Windows 10/11 :
-  aucun téléchargement, aucun compte, aucune dépendance, 100 % hors ligne.
+  FREESTREAM - serveur Windows ZERO INSTALLATION.
+  PowerShell 5.1 est present dans TOUTES les versions de Windows 10/11 :
+  aucun telechargement, aucun compte, aucune dependance, 100 % hors ligne.
 
-  Utilisé uniquement par DEMARRER.bat si ni Node.js ni Python ne sont installés.
-  Il expose exactement les mêmes routes que server.js / server.py.
+  Utilise uniquement par DEMARRER.bat si ni Node.js ni Python ne sont installes.
+  Il expose exactement les memes routes que server.js / server.py.
 
-  Note SSE : la connexion envoie l'état puis se ferme avec « retry: 600 ».
+  Note SSE : la connexion envoie l'etat puis se ferme avec " retry: 600 ".
   EventSource se reconnecte automatiquement ; la latence maximale est donc
-  de ~600 ms, ce qui reste imperceptible pour des paroles. Cela évite de
-  bloquer le thread d'écoute unique de HttpListener.
+  de ~600 ms, ce qui reste imperceptible pour des paroles. Cela evite de
+  bloquer le thread d'ecoute unique de HttpListener.
 #>
 param([int]$Port = 8787)
 $ErrorActionPreference = 'Stop'
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }
-# Nécessaire pour ParseQueryString sur PowerShell 5.1 (Windows intégré).
+# Necessaire pour ParseQueryString sur PowerShell 5.1 (Windows integre).
 try { Add-Type -AssemblyName System.Web -ErrorAction SilentlyContinue } catch { }
 
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -53,7 +53,7 @@ function ConvertTo-Hashtable($obj) {
     return $h
   }
   if ($obj -is [psobject] -and $obj.PSObject -and $obj.PSObject.Properties.Count -gt 0 -and -not ($obj -is [string]) -and -not ($obj -is [int]) -and -not ($obj -is [bool]) -and -not ($obj -is [double])) {
-    # PSCustomObject (ConvertFrom-Json) — mais pas les scalaires
+    # PSCustomObject (ConvertFrom-Json) - mais pas les scalaires
     if ($obj.GetType().Name -like 'PSCustomObject') {
       $h = @{}
       foreach ($p in $obj.PSObject.Properties) { $h[$p.Name] = ConvertTo-Hashtable $p.Value }
@@ -78,7 +78,7 @@ function FromJson($txt) {
   return ConvertTo-Hashtable (ConvertFrom-Json -InputObject $txt)
 }
 
-# État minimal : le navigateur fusionne avec ses propres valeurs par défaut.
+# Etat minimal : le navigateur fusionne avec ses propres valeurs par defaut.
 $script:State = @{
   rev = 1; updatedAt = 0
   live = @{ tool = $null; fullscreen = $null; lower = $null; coeur = $null; lowerthird = $null; blackout = $false; history = @() }
@@ -101,7 +101,7 @@ function Save-State {
 }
 Save-State
 
-# ------------------------------------------------------------------ sûreté
+# ------------------------------------------------------------------ surete
 function Safe-Path([string]$rel) {
   if ([string]::IsNullOrWhiteSpace($rel)) { return $null }
   $rel = [System.Uri]::UnescapeDataString($rel).TrimStart('/', '\').Replace('/', '\')
@@ -157,7 +157,7 @@ function Serve-Static($res, [string]$rel, [string]$rangeHeader, [string]$method)
   if ([string]::IsNullOrWhiteSpace($rel) -or $rel -eq '/') { $rel = 'index.html' }
   if ($rel -eq '/regie') { $rel = 'regie.html' }
   if ($rel.StartsWith('/media/')) { $rel = '/donnees/medias/' + $rel.Substring(7) }
-  # Raccourcis plein-bible.html / bas-chants.html → réécriture
+  # Raccourcis plein-bible.html / bas-chants.html -> reecriture
   if ($rel -match '^/?(plein|bas)-([a-z]+)\.html$') { $rel = 'outputs/' + $Matches[1] + '.html?tool=' + $Matches[2] }
   $q = ''
   $qi = $rel.IndexOf('?')
@@ -206,7 +206,7 @@ function Serve-Static($res, [string]$rel, [string]$rangeHeader, [string]$method)
 }
 
 function Handle-Post($req, $res, [string]$path, [string]$rawText) {
-  # /api/upload est binaire : le corps a déjà été lu par l'appelant.
+  # /api/upload est binaire : le corps a deja ete lu par l'appelant.
   $data = if ($path -eq '/api/upload') { @{} } else { FromJson $rawText }
   switch -Exact ($path) {
     '/api/patch' {
@@ -298,16 +298,16 @@ $prefix = "http://localhost:$Port/"
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add($prefix)
 try { $listener.Start() } catch {
-  Write-Host "  [ERREUR] Impossible d'écouter sur $prefix"
+  Write-Host "  [ERREUR] Impossible d'ecouter sur $prefix"
   Write-Host "  $($_.Exception.Message)"
   Write-Host "  Essayez un autre port : powershell -File server.ps1 -Port 8788"
   exit 1
 }
 Write-Host ''
-Write-Host '  ╔══════════════════════════════════════════════════════════╗'
-Write-Host '  ║   FREESTREAM — prêt, 100 % hors ligne (PowerShell)     ║'
-Write-Host '  ╚══════════════════════════════════════════════════════════╝'
-Write-Host "  Régie   : $prefix`regie.html"
+Write-Host '  +----------------------------------------------------------+'
+Write-Host '  -   FREESTREAM - pret, 100 % hors ligne (PowerShell)     -'
+Write-Host '  +----------------------------------------------------------+'
+Write-Host "  Regie   : $prefix`regie.html"
 Write-Host "  Sorties : $prefix`index.html"
 Write-Host "  Dossier : $Root"
 Write-Host ''
@@ -357,7 +357,7 @@ while ($listener.IsListening -and -not $script:Stop) {
     } elseif ($path -eq '/api/convert/check') {
       Send-Json $res 200 @{ available = $false }
     } elseif ($path -eq '/api/events') {
-      # SSE à reconnexion rapide : l'état est envoyé puis la socket se ferme.
+      # SSE a reconnexion rapide : l'etat est envoye puis la socket se ferme.
       $payload = "retry: 600`nid: $($script:State['rev'])`nevent: state`ndata: $(ToJson $script:State)`n`n"
       Send-Bytes $res 200 ([System.Text.Encoding]::UTF8.GetBytes($payload)) 'text/event-stream; charset=utf-8'
     } elseif ($method -eq 'POST' -or $method -eq 'PUT') {
@@ -373,7 +373,7 @@ while ($listener.IsListening -and -not $script:Stop) {
     } elseif ($method -eq 'GET' -or $method -eq 'HEAD') {
       Serve-Static $res $path ([string]$req.Headers['Range']) $method
     } else {
-      Send-Json $res 405 @{ error = 'Méthode non autorisée' }
+      Send-Json $res 405 @{ error = 'Methode non autorisee' }
     }
   } catch {
     try { Send-Json $ctx.Response 500 @{ error = $_.Exception.Message } } catch { }
@@ -383,4 +383,4 @@ while ($listener.IsListening -and -not $script:Stop) {
 }
 Save-State
 try { $listener.Stop(); $listener.Close() } catch { }
-Write-Host '  Serveur arrêté, état sauvegardé.'
+Write-Host '  Serveur arrete, etat sauvegarde.'

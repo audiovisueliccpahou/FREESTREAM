@@ -34,22 +34,30 @@ if (path.resolve(DEST) === ROOT || DEST.startsWith(ROOT + path.sep) && DEST === 
 const INCLUDE = [
   'index.html', 'regie.html', 'regies/', 'outputs/', 'core/', 'regie/', 'styles/',
   'templates/', 'outils/', 'donnees/', 'docs/', 'server.js', 'server.py',
-  'DEMARRER.bat', 'DEMARRER.sh', 'DEMARRER.command', 'server.ps1', 'README.md', 'LISEZ-MOI.txt', 'VERSION.txt',
+  'DEMARRER.bat', 'DIAGNOSTIC.bat', 'DEMARRER.sh', 'DEMARRER.command', 'server.ps1',
+  'README.md', 'LISEZ-MOI.txt', 'VERSION.txt',
   'ROADMAP.md', 'package.json', '.gitignore',
 ];
 const EXCLUDE_DIR = new Set(['node_modules', '.git', '.cache', '.venv', 'dist', '__pycache__',
   '.pytest_cache', '.ruff_cache', 'coverage', '.next', '.arena', 'Unselected files']);
-const EXCLUDE_FILE = /\.(log|tmp|pyc|map)$|^screenshot-|^state\.json$|^live\.js$|^\.DS_Store$|^\._/i;
+const EXCLUDE_FILE = /\.(log|tmp|pyc|map)$|^screenshot-|^state\.json$|^live\.js$|^DIAGNOSTIC\.txt$|^DEMARRAGE-LOG\.txt$|^\.DS_Store$|^\._/i;
 const DATA_FOLDERS = ['bibles', 'chants', 'lowerthirds', 'medias', 'projets', 'designs', 'polices', 'etat'];
 
 let files = 0, bytes = 0, skipped = 0;
 function copyFile(src, dest) {
   fs.mkdirSync(path.dirname(dest), { recursive: true });
-  // Les fichiers .bat exigent des fins de ligne CRLF sous Windows (surtout avec
-  // des labels/goto). Les autres fichiers restent tels quels.
+  // WINDOWS : deux pieges mortels corriges ici, systematiquement.
+  //  1) .bat -> CRLF obligatoire (sinon labels/goto cassent). ASCII pur.
+  //  2) .ps1 -> BOM UTF-8 OBLIGATOIRE. Sans BOM, Windows PowerShell 5.1 lit
+  //     le fichier en ANSI/Windows-1252 : les caracteres non-ASCII deviennent
+  //     alors des guillemets typographiques que PowerShell prend pour de vrais
+  //     delimiteurs de chaine -> erreur de parsing -> fenetre noire qui se ferme.
   if (dest.toLowerCase().endsWith('.bat')) {
     const txt = fs.readFileSync(src, 'utf8').replace(/^\uFEFF/, '').replace(/\r?\n/g, '\r\n');
-    fs.writeFileSync(dest, txt, 'utf8');     // ASCII pur dans nos .bat : aucun risque d'encodage
+    fs.writeFileSync(dest, txt, 'utf8');
+  } else if (dest.toLowerCase().endsWith('.ps1')) {
+    const txt = fs.readFileSync(src, 'utf8').replace(/^\uFEFF/, '').replace(/\r?\n/g, '\r\n');
+    fs.writeFileSync(dest, '\uFEFF' + txt, 'utf8');
   } else fs.copyFileSync(src, dest);
   files++; bytes += fs.statSync(dest).size;
 }
@@ -193,8 +201,9 @@ const notice = fs.existsSync(path.join(ROOT, 'LISEZ-MOI.txt'))
 fs.writeFileSync(path.join(DEST, 'LISEZ-MOI.txt'), crlf(notice.replace(new RegExp(`FREESTREAM [0-9.]+`, 'g'), 'FREESTREAM ' + version)), 'utf8');
 
 // Contrôle d'intégrité du livrable.
-const must = ['index.html', 'regie.html', 'DEMARRER.bat', 'DEMARRER.sh', 'DEMARRER.command',
-  'server.js', 'server.py', 'server.ps1', 'outils/DEMARRER.ps1',
+const must = ['index.html', 'regie.html', 'DEMARRER.bat', 'DIAGNOSTIC.bat',
+  'DEMARRER.sh', 'DEMARRER.command', 'server.js', 'server.py', 'server.ps1',
+  'outils/DEMARRER.ps1', 'outils/diagnostic.ps1',
   'outputs/plein.html', 'outputs/bas.html', 'outputs/custom.html',
   'outputs/orateur.html', 'outputs/minuteur.html', 'outputs/output.js',
   'core/renderer.js', 'core/store.js', 'regie/app.js', 'LISEZ-MOI.txt'];

@@ -25,6 +25,27 @@
    Laissez la fenêtre/terminal serveur ouvert(e) pendant le culte.
    Un journal est écrit dans demarrage.log en cas de problème.
 
+   *** SI CA NE DEMARRE PAS (fenêtre noire qui se ferme) ***
+   ------------------------------------------------------------
+   Lancez DIAGNOSTIC.bat (il ne se ferme JAMAIS tout seul). Il verifie :
+     - les fichiers presents ou manquants,
+     - l'encodage et la SYNTAXE REELLE des scripts PowerShell,
+     - la politique d'execution de votre Windows,
+     - les moteurs Node/Python/winget et le navigateur,
+     - le port 8787 et un demarrage REEL du serveur sur un port temporaire.
+   Il affiche le resultat a l'ecran ET ecrit DIAGNOSTIC.txt a cote de
+   DEMARRER.bat. Envoyez ce fichier pour une aide rapide.
+
+   DEMARRER.bat a aussi ete corrige : il ne se ferme PLUS sans rien dire.
+   Si PowerShell echoue, il affiche l'erreur, propose des causes, puis
+   essaie automatiquement Node.js, Python, et enfin le mode dossier.
+   Un journal est ecrit dans DEMARRAGE-LOG.txt.
+
+   Rappel : DEMARRER.bat fonctionne avec le PowerShell INTEGRE a Windows.
+   Aucune installation n'est obligatoire. Si votre entreprise bloque
+   PowerShell par une stratégie de groupe, installez Node.js (nodejs.org)
+   ou utilisez le mode dossier dans Chrome/Edge.
+
 2. DANS OBS
    Ouvrez la page des liens, copiez l'adresse de la sortie voulue, puis dans
    OBS : Sources > + > Source navigateur > collez l'URL.

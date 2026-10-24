@@ -185,6 +185,40 @@ automatiquement par l'ajustement. La régie dispose aussi de **⛶ Max** (F11)
 pour passer en plein écran et de **◧ Aperçus** pour replier le panneau de droite
 et donner toute la largeur à l'éditeur.
 
+### 3.3 bis. Dépannage Windows : plus de fenêtre noire qui se ferme
+
+**Symptôme rencontré** : au lancement de `DEMARRER.bat` (même en administrateur),
+une fenêtre noire apparaît et se ferme aussitôt, sans message.
+
+**Trois causes réelles, toutes corrigées :**
+
+| Cause | Pourquoi ça cassait | Correctif |
+|---|---|---|
+| `exit /b %errorlevel%` **dans** un bloc `if (...)` | `cmd.exe` développe `%errorlevel%` **avant** d'exécuter PowerShell : il valait donc toujours 0. Même en cas de plantage, le script sortait « avec succès » et la fenêtre disparaissait, sans aucun `pause`. | Structure plate en `goto` : le code retour est testé **hors** de tout bloc (`if errorlevel 1 goto :psfail`), l'erreur est affichée, puis un repli est tenté. **Tous** les chemins passent par `:fin` qui contient un `pause`. |
+| Fichiers `.ps1` **sans BOM UTF-8** | Windows PowerShell 5.1 lit un `.ps1` sans BOM en **ANSI/Windows-1252**. Un tiret long `—` ou une flèche `→` décodé ainsi devient un **guillemet typographique** (`“`/`”`) que PowerShell traite comme un vrai délimiteur de chaîne → déséquilibre → erreur de parsing. | Les trois `.ps1` sont désormais **ASCII pur + BOM UTF-8 + CRLF**, et l'export garantit ces trois propriétés. Même si un éditeur perd le BOM, le fichier reste analysable. |
+| `chcp 65001` en tête du batch | Perturbe la relecture du `.bat` sur certains Windows. | Supprimé : le `.bat` est 100 % ASCII, il n'a pas besoin de changer de page de codes. |
+
+**Outil de diagnostic fourni : `DIAGNOSTIC.bat`.** Il ne se ferme jamais seul et
+vérifie concrètement :
+
+- présence des 12 fichiers indispensables ;
+- **encodage + syntaxe PowerShell analysée par le parseur officiel**
+  (`[System.Management.Automation.Language.Parser]::ParseFile`) avec numéro de ligne ;
+- politique d'exécution PowerShell (et avertissement si une GPO la force) ;
+- moteurs Node / Python / winget, navigateur Chrome/Edge ;
+- **démarrage réel** du serveur PowerShell sur un port temporaire + test
+  `/api/health`, puis arrêt propre ;
+- occupation du port 8787.
+
+Il affiche tout à l'écran **et** écrit `DIAGNOSTIC.txt` à côté de `DEMARRER.bat`.
+`DEMARRER.bat` écrit lui aussi `DEMARRAGE-LOG.txt` avec un marqueur
+`[MARKER]` qui indique si le script PowerShell a réellement démarré.
+
+**Si PowerShell est bloqué par une stratégie d'entreprise** : le lanceur bascule
+automatiquement sur Node.js, puis Python, puis le **mode dossier** (Chrome/Edge,
+zéro installation). Installez simplement Node.js depuis nodejs.org pour retrouver
+la synchronisation instantanée.
+
 ### 3.4 Sortie CŒUR — `outputs/coeur.html`
 
 Écran de louange dédié : la **section courante** s'affiche en très gros
@@ -344,7 +378,7 @@ console**.
 
 ```bash
 npm install                 # outils de test — le livrable n'en a PAS besoin
-npm test                    # TOUTES les suites (146 tests)
+npm test                    # TOUTES les suites (161 tests)
 node --test tests/unit.test.mjs
 node --test tests/render.test.mjs
 node --test tests/http.test.mjs
@@ -358,13 +392,18 @@ node --test tests/browser.test.mjs
 |---|---|---|
 | `unit.test.mjs` | **66/66** | Références bibliques, Esther 8:9 en 4 sections, minuteur négatif, médias/YouTube, `?tool=`, durée lowerthird, **sortie Cœur**, vignettage média, RTF navigateur |
 | `render.test.mjs` | **18/18** | Déterminisme preview/OBS, fond inchangé, transparence, HTML assaini, auto-ajustement, vidéo réutilisée, `page=1 → page=4`, YouTube, **vignette image/vidéo** |
-| `http.test.mjs` | **25/25** | Santé, pages, MIME, **sécurité des dossiers**, état, SSE, CRUD, upload, Range, copie, **duplication réelle**, renommage, conversion, présence, 404 |
+| `http.test.mjs` | **27/27** | Santé, pages, MIME, **sécurité des dossiers**, état, SSE, CRUD, upload, Range, copie, **duplication réelle**, renommage, conversion, présence, 404 |
 | `python.test.mjs` | **10/10** | Le serveur de repli Python : mêmes pages, patch, SSE, Range, CRUD, upload, duplication, sécurité |
-| `powershell.test.mjs` | **6/6** | Syntaxe PowerShell analysée par la grammaire WASM de VS Code, routes, sécurité, lanceurs `.bat`/`.sh`/`.command` |
+| `powershell.test.mjs` | **19/19** | Syntaxe PowerShell analysée par la grammaire WASM de VS Code, routes, sécurité, lanceurs `.bat`/`.sh`/`.command` |
 | `ui.test.mjs` | **9/9** | Montage réel des 9 modules jsdom : suggestions `es`, 4 sections, envoi, flèches, sous-onglets, 2 clics médias, lowerthird, designs, liens, orateur, raccourcis |
 | `browser.test.mjs` | **12/12** | **Vrai Chromium** : 0 erreur console, régie → plein + bas, plein figé pendant les 4 sections, **sortie Cœur collante**, **vignette média**, opacité OBS, transparence, liens |
 
-**Total : 146 tests, 0 échec.**
+**Total : 161 tests, 0 échec.**
+
+**Isolation des tests** : les serveurs de test reçoivent `FREESTREAM_DATA_DIR`
+qui pointe vers un dossier temporaire. Les démos du projet y sont copiées, mais
+**aucune écriture de test ne touche le projet livré** (le piège classique était
+un `lowerthird` de test dont la date changeait à chaque `npm test`).
 
 **Sécurité serveur vérifiée** sur les trois moteurs : un `folder` non déclaré
 (`../../etc`) renvoie `400 Dossier inconnu` ; un nom `../../../hack.txt` est

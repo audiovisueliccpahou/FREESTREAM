@@ -28,3 +28,26 @@ export function makeDom(html = '<!doctype html><html><body><div id="root"></div>
 export function clearGlobals() {
   for (const k of ['window','document','DOMParser','Node','HTMLElement','ResizeObserver','navigator','location']) delete globalThis[k];
 }
+
+/**
+ * Prépare un dossier de DONNÉES temporaire pour un serveur de test.
+ * Les démos du projet y sont copiées (pour que les tests trouvent ls1910.json,
+ * etc.), mais toutes les ÉCRITURES restent dans ce dossier temporaire :
+ * le projet livré n'est jamais pollué par un test.
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+export function prepareTestData(tmp, root = process.cwd()) {
+  const src = path.join(root, 'donnees');
+  const dst = path.join(tmp, 'donnees');
+  fs.mkdirSync(dst, { recursive: true });
+  if (fs.existsSync(src)) fs.cpSync(src, dst, { recursive: true, force: true });
+  // Les fichiers d'état sont gérés séparément par FREESTREAM_STATE_FILE.
+  for (const f of ['state.json', 'live.js']) {
+    try { fs.rmSync(path.join(dst, 'etat', f), { force: true }); } catch { }
+  }
+  for (const d of ['bibles','chants','lowerthirds','medias','projets','designs','polices','etat']) {
+    fs.mkdirSync(path.join(dst, d), { recursive: true });
+  }
+  return tmp;
+}

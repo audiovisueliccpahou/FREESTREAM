@@ -97,12 +97,12 @@ clic droit, loupe 1:1 sur les aperçus.
 |---|---|
 | `tests/unit.test.mjs` | ✅ 66/66 |
 | `tests/render.test.mjs` | ✅ 18/18 |
-| `tests/http.test.mjs` | ✅ 25/25 |
+| `tests/http.test.mjs` | ✅ 27/27 |
 | `tests/python.test.mjs` | ✅ 10/10 |
-| `tests/powershell.test.mjs` | ✅ 6/6 (syntaxe analysée en WASM) |
+| `tests/powershell.test.mjs` | ✅ 19/19 (syntaxe + régression fenêtre noire) |
 | `tests/ui.test.mjs` | ✅ 9/9 |
 | `tests/browser.test.mjs` | ✅ 12/12 (vrai Chromium) |
-| **TOTAL** | ✅ **146/146** |
+| **TOTAL** | ✅ **161/161** |
 | Parcours réel Chromium headless | ✅ régie → plein + bas + Cœur, 0 erreur console |
 | Sécurité traversée de dossiers | ✅ `400` sur dossier inconnu, noms neutralisés (Node, Python, PowerShell) |
 
@@ -131,12 +131,34 @@ clic droit, loupe 1:1 sur les aperçus.
 
 ## H. Chantiers restants (optionnels, non bloquants)
 
+### ⚠ Régression Windows corrigée — « fenêtre noire qui se ferme »
+
+Retour terrain : `DEMARRER.bat` ouvrait une fenêtre noire qui disparaissait
+aussitôt, même lancé en administrateur. **Trois causes identifiées et corrigées**,
+désormais couvertes par des tests de non-régression (`tests/powershell.test.mjs`) :
+
+1. `exit /b %errorlevel%` placé **dans** un bloc `if (...)` → `%errorlevel%`
+   développé trop tôt par `cmd.exe` → sortie avec le code 0 même en cas d'échec,
+   et aucun `pause` sur ce chemin. Corrigé par une structure en `goto` avec test
+   du code retour hors bloc, affichage de l'erreur, repli, et `pause` final
+   inconditionnel.
+2. Scripts `.ps1` **sans BOM UTF-8** → lus en ANSI par Windows PowerShell 5.1 ;
+   les caractères `—`, `→`, `’`, `✓` deviennent des guillemets typographiques
+   reconnus comme délimiteurs de chaîne → erreur de parsing. Corrigé : **ASCII pur
+   + BOM UTF-8 + CRLF** garantis à la source **et** par l'export.
+3. `chcp 65001` en tête du batch supprimé.
+
+Ajout de **`DIAGNOSTIC.bat`** + `outils/diagnostic.ps1` : ne se ferme jamais,
+analyse la syntaxe PowerShell avec le parseur officiel, remonte la politique
+d'exécution, teste réellement le serveur, et écrit `DIAGNOSTIC.txt`.
+
 - 🟡 Validation manuelle sur un poste **Windows réel avec OBS** : le sandbox
-  n'a ni Windows ni OBS. La **syntaxe** de `server.ps1` / `DEMARRER.ps1` est
-  validée par la grammaire tree-sitter officielle, le comportement du serveur
-  est couvert par les mêmes tests appliqués à Node et Python, et le lanceur
-  **contrôle `/api/health`** avant d'ouvrir le navigateur : s'il ne démarre pas,
-  il bascule automatiquement en mode dossier. Protocole au § 9 du `README.md`.
+  n'a ni Windows ni OBS. La **syntaxe** des trois `.ps1` est validée par la
+  grammaire tree-sitter officielle **et** par le parseur PowerShell embarqué dans
+  le diagnostic ; le comportement du serveur est couvert par les mêmes tests
+  appliqués à Node et Python ; le lanceur **contrôle `/api/health`** avant
+  d'ouvrir le navigateur et bascule en mode dossier s'il ne démarre pas.
+  Protocole au § 9 du `README.md`.
 - ⬜ Catalogue d'API bibliques en ligne préconfiguré (l'intégration existe, les
   endpoints restent à choisir selon les préférences de l'équipe).
 - 🟡 `decodeRtf()` de `core/songs-utils.js` utilise encore `Buffer` : fonctionne

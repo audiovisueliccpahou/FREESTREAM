@@ -7,6 +7,8 @@ __pycache__/
 .DS_Store
 Thumbs.db
 *.log
+DIAGNOSTIC.txt
+DEMARRAGE-LOG.txt
 donnees/etat/*.tmp
 donnees/medias/.cache/
 

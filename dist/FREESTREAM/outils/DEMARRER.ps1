@@ -1,16 +1,16 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
-  FREESTREAM — orchestrateur de démarrage WINDOWS (un seul double-clic).
-  Appelé par DEMARRER.bat. 100 % hors ligne par défaut.
+  FREESTREAM - orchestrateur de demarrage WINDOWS (un seul double-clic).
+  Appele par DEMARRER.bat. 100 % hors ligne par defaut.
 
-  1. Vérifie le dossier et les navigateurs disponibles.
-  2. Cherche un moteur : Node.js → Python → PowerShell intégré (toujours présent).
-  3. Démarre le serveur correspondant, attend /api/health.
-  4. Si aucun moteur ne démarre, PROPOSE d'installer Node.js via winget
-     (nécessite Internet, avec consentement explicite).
-  5. Ouvre la régie ET la page des liens OBS dans le navigateur.
-  6. Si vraiment rien ne marche : ouvre quand même la régie en MODE DOSSIER
-     (zéro installation ; l'utilisateur confirme le dossier une seule fois).
+  1. Verifie le dossier et les navigateurs disponibles.
+  2. Cherche un moteur : Node.js -> Python -> PowerShell integre (toujours present).
+  3. Demarre le serveur correspondant, attend /api/health.
+  4. Si aucun moteur ne demarre, PROPOSE d'installer Node.js via winget
+     (necessite Internet, avec consentement explicite).
+  5. Ouvre la regie ET la page des liens OBS dans le navigateur.
+  6. Si vraiment rien ne marche : ouvre quand meme la regie en MODE DOSSIER
+     (zero installation ; l'utilisateur confirme le dossier une seule fois).
 #>
 param([int]$Port = 8787)
 $ErrorActionPreference = 'Continue'
@@ -18,32 +18,32 @@ try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }
 
 $Root = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $Root
-$Log = Join-Path $Root 'demarrage.log'
+$Log = Join-Path $Root 'DEMARRAGE-LOG.txt'
 function Write-Step([string]$msg, [string]$color = 'Gray') {
   Write-Host "  $msg" -ForegroundColor $color
   try { Add-Content -LiteralPath $Log -Value ("[{0}] {1}" -f (Get-Date -Format 'HH:mm:ss'), $msg) -Encoding UTF8 } catch { }
 }
-Set-Content -LiteralPath $Log -Value "FREESTREAM — démarrage $(Get-Date)" -Encoding UTF8
+Set-Content -LiteralPath $Log -Value "[MARKER] FREESTREAM - le script PowerShell a bien demarre - $(Get-Date)" -Encoding UTF8
 
 Write-Host ''
-Write-Host '  ╔══════════════════════════════════════════════════════════╗' -ForegroundColor Yellow
-Write-Host '  ║   FREESTREAM — régie de culte 100 % hors ligne         ║' -ForegroundColor Yellow
-Write-Host '  ╚══════════════════════════════════════════════════════════╝' -ForegroundColor Yellow
+Write-Host '  +----------------------------------------------------------+' -ForegroundColor Yellow
+Write-Host '  -   FREESTREAM - regie de culte 100 % hors ligne         -' -ForegroundColor Yellow
+Write-Host '  +----------------------------------------------------------+' -ForegroundColor Yellow
 Write-Host ''
 Write-Step "Dossier du projet : $Root"
 
 # ------------------------------------------------------------ 1. navigateur
 $browsers = @(
   "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
-  "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
+  "$([Environment]::GetEnvironmentVariable('ProgramFiles(x86)'))\Google\Chrome\Application\chrome.exe",
   "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe",
   "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe",
-  "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe",
+  "$([Environment]::GetEnvironmentVariable('ProgramFiles(x86)'))\Microsoft\Edge\Application\msedge.exe",
   "$env:ProgramFiles\Mozilla Firefox\firefox.exe"
 )
 $Browser = $browsers | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
-if ($Browser) { Write-Step "Navigateur trouvé : $([System.IO.Path]::GetFileName($Browser))" 'Green' }
-else { Write-Step 'Navigateur par défaut utilisé (Chrome/Edge recommandé pour le mode dossier).' 'Yellow' }
+if ($Browser) { Write-Step "Navigateur trouve : $([System.IO.Path]::GetFileName($Browser))" 'Green' }
+else { Write-Step 'Navigateur par defaut utilise (Chrome/Edge recommande pour le mode dossier).' 'Yellow' }
 
 function Open-Url([string]$url) {
   try { if ($Browser) { Start-Process -FilePath $Browser -ArgumentList $url } else { Start-Process $url } }
@@ -65,14 +65,14 @@ $engines = @()
 if ($Node) { $engines += @{ name = 'Node.js'; file = $Node; args = @((Join-Path $Root 'server.js'), "$Port") } }
 if ($Py)   { $pyArgs = @((Join-Path $Root 'server.py'), "$Port"); if ([System.IO.Path]::GetFileName($Py) -eq 'py.exe') { $pyArgs = @('-3') + $pyArgs }
              $engines += @{ name = 'Python'; file = $Py; args = $pyArgs } }
-# PowerShell est TOUJOURS disponible sur Windows → zéro installation garantie.
-$engines += @{ name = 'PowerShell intégré'; file = 'powershell.exe'; args = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $Root 'server.ps1'), '-Port', "$Port") }
+# PowerShell est TOUJOURS disponible sur Windows -> zero installation garantie.
+$engines += @{ name = 'PowerShell integre'; file = 'powershell.exe'; args = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $Root 'server.ps1'), '-Port', "$Port") }
 
-if ($Node)     { Write-Step '✓ Node.js détecté (moteur recommandé).' 'Green' }
-elseif ($Py)   { Write-Step '✓ Python détecté (serveur de repli).' 'Green' }
-else           { Write-Step '✓ Aucun moteur externe : PowerShell intégré utilisé, RIEN à installer.' 'Green' }
+if ($Node)     { Write-Step 'OK Node.js detecte (moteur recommande).' 'Green' }
+elseif ($Py)   { Write-Step 'OK Python detecte (serveur de repli).' 'Green' }
+else           { Write-Step 'OK Aucun moteur externe : PowerShell integre utilise, RIEN a installer.' 'Green' }
 
-# --------------------------------------------------------- 3. démarrage + santé
+# --------------------------------------------------------- 3. demarrage + sante
 $Base = "http://localhost:$Port"
 function Test-Health {
   try {
@@ -83,31 +83,31 @@ function Test-Health {
 $proc = $null
 $started = $false
 foreach ($e in $engines) {
-  Write-Step "Tentative : $($e.name)…"
+  Write-Step "Tentative : $($e.name)..."
   try {
     $proc = Start-Process -FilePath $e.file -ArgumentList $e.args -WorkingDirectory $Root `
       -WindowStyle Minimized -PassThru -ErrorAction Stop
-  } catch { Write-Step "  Échec du lancement : $($_.Exception.Message)" 'Red'; continue }
+  } catch { Write-Step "  Echec du lancement : $($_.Exception.Message)" 'Red'; continue }
   for ($i = 0; $i -lt 12; $i++) {
     Start-Sleep -Milliseconds 600
     if (Test-Health) { $started = $true; break }
     if ($proc.HasExited) { break }
   }
-  if ($started) { Write-Step "✓ Serveur $($e.name) opérationnel sur le port $Port." 'Green'; break }
-  Write-Step "  $($e.name) n'a pas répondu, essai suivant…" 'Yellow'
+  if ($started) { Write-Step "OK Serveur $($e.name) operationnel sur le port $Port." 'Green'; break }
+  Write-Step "  $($e.name) n'a pas repondu, essai suivant..." 'Yellow'
   try { if ($proc -and -not $proc.HasExited) { Stop-Process -Id $proc.Id -Force } } catch { }
   $proc = $null
 }
 
 # ------------------------------------------- 4. installation optionnelle
 if (-not $started) {
-  Write-Step 'Aucun moteur local n’a pu démarrer.' 'Yellow'
+  Write-Step "Echec de demarrage de tous les moteurs locaux." 'Yellow'
   $winget = Get-CommandPath 'winget'
   if ($winget) {
     Write-Host ''
-    $answer = Read-Host '  Installer Node.js automatiquement via winget ? (nécessite Internet) [o/N]'
+    $answer = Read-Host '  Installer Node.js automatiquement via winget ? (necessite Internet) [o/N]'
     if ($answer -match '^[oOyY]') {
-      Write-Step 'Installation de Node.js LTS en cours…' 'Cyan'
+      Write-Step 'Installation de Node.js LTS en cours...' 'Cyan'
       try { & $winget install --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements | Out-Host } catch { }
       $env:Path = [System.Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path', 'User')
       $Node = Get-CommandPath 'node'
@@ -115,7 +115,7 @@ if (-not $started) {
         $proc = Start-Process -FilePath $Node -ArgumentList @((Join-Path $Root 'server.js'), "$Port") -WorkingDirectory $Root -WindowStyle Minimized -PassThru
         for ($i = 0; $i -lt 12; $i++) { Start-Sleep -Milliseconds 600; if (Test-Health) { $started = $true; break } }
       }
-      if ($started) { Write-Step '✓ Node.js installé, serveur opérationnel.' 'Green' }
+      if ($started) { Write-Step 'OK Node.js installe, serveur operationnel.' 'Green' }
     }
   } else { Write-Step 'winget absent : installation automatique non disponible.' 'Yellow' }
 }
@@ -127,25 +127,24 @@ if ($started) {
   Start-Sleep -Milliseconds 700
   Open-Url "$Base/index.html"
   Write-Host ''
-  Write-Host '  ──────────────────────────────────────────────────────────' -ForegroundColor DarkGray
-  Write-Host "    RÉGIE      : $Base/regie.html" -ForegroundColor Cyan
+  Write-Host '  ----------------------------------------------------------' -ForegroundColor DarkGray
+  Write-Host "    REGIE      : $Base/regie.html" -ForegroundColor Cyan
   Write-Host "    LIENS OBS  : $Base/index.html" -ForegroundColor Cyan
-  Write-Host '  ──────────────────────────────────────────────────────────' -ForegroundColor DarkGray
-  Write-Step 'Laissez la fenêtre serveur (minimisée) ouverte pendant le culte.'
+  Write-Host '  ----------------------------------------------------------' -ForegroundColor DarkGray
+  Write-Step 'Laissez la fenetre serveur (minimisee) ouverte pendant le culte.'
 } else {
-  # REPLI ULTIME : aucun serveur, mais TOUT fonctionne quand même.
-  Write-Step 'Ouverture en MODE DOSSIER — aucune installation requise.' 'Cyan'
+  # REPLI ULTIME : aucun serveur, mais TOUT fonctionne quand meme.
+  Write-Step 'Ouverture en MODE DOSSIER - aucune installation requise.' 'Cyan'
   $regie = (Join-Path $Root 'regie.html').Replace('\', '/')
   $index = (Join-Path $Root 'index.html').Replace('\', '/')
   Open-Url "file:///$regie?mode=dossier"
   Start-Sleep -Milliseconds 700
   Open-Url "file:///$index"
   Write-Host ''
-  Write-Step 'Dans la régie, cliquez sur « 📂 Mode dossier » et sélectionnez ce dossier une seule fois.' 'Yellow'
+  Write-Step 'Dans la regie, cliquez sur le bouton Mode dossier, puis selectionnez ce dossier.' 'Yellow'
   Write-Step 'Les sorties OBS liront donnees/etat/live.js : tout fonctionne sans serveur.'
 }
 Write-Host ''
 Write-Step "Journal : $Log" 'DarkGray'
 Write-Host ''
-Write-Host '  Appuyez sur une touche pour fermer cette fenêtre (le serveur reste actif).' -ForegroundColor DarkGray
-try { $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown') } catch { Start-Sleep -Seconds 3 }
+Write-Step 'DEMARRAGE TERMINE - le serveur reste actif dans une fenetre separee.' 'Green'

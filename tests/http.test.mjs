@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import net from 'node:net';
+import { prepareTestData } from './setup.mjs';
 
 const ROOT = process.cwd();
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'fs-test-'));
@@ -26,8 +27,9 @@ const post = (p, body) => fetch(BASE + p, { method:'POST', headers:{'Content-Typ
 
 before(async () => {
   PORT = await freePort(); BASE = `http://127.0.0.1:${PORT}`;
+  prepareTestData(TMP, ROOT);
   child = spawn(process.execPath, ['server.js', String(PORT)], {
-    cwd: ROOT, env: { ...process.env, FREESTREAM_HOST:'127.0.0.1', FREESTREAM_STATE_FILE:STATE_FILE, FREESTREAM_STATE_JS:path.join(TMP,'live.js') },
+    cwd: ROOT, env: { ...process.env, FREESTREAM_HOST:'127.0.0.1', FREESTREAM_DATA_DIR:TMP, FREESTREAM_STATE_FILE:STATE_FILE, FREESTREAM_STATE_JS:path.join(TMP,'live.js') },
     stdio: ['ignore','pipe','pipe'],
   });
   child.stderr.on('data', d => process.stderr.write(d));
@@ -36,6 +38,21 @@ before(async () => {
 after(() => { try { child?.kill('SIGTERM'); } catch { } try { fs.rmSync(TMP,{recursive:true,force:true}); } catch { } });
 
 describe('Serveur local — santé & pages', () => {
+  test('les donnees de test sont ISOLEES du projet livre', async () => {
+    const i = await J('/api/info');
+    assert.ok(i.dataRoot && i.dataRoot !== i.root, 'FREESTREAM_DATA_DIR doit pointer ailleurs que la racine du projet');
+    assert.ok(i.dataRoot.startsWith(os.tmpdir()), 'le dossier de donnees de test est temporaire');
+  });
+  test('repli : une demo absente de DATA_ROOT reste servie depuis le projet', async () => {
+    const f = path.join(TMP, 'donnees/bibles/kjv.json');
+    const backup = fs.readFileSync(f);
+    fs.rmSync(f);
+    try {
+      const r = await fetch(BASE + '/donnees/bibles/kjv.json');
+      assert.equal(r.status, 200, 'le repli doit servir la Bible integree');
+      assert.ok((await r.text()).trim().startsWith('{'));
+    } finally { fs.writeFileSync(f, backup); }
+  });
   test('health répond', async () => { const h = await J('/api/health'); assert.equal(h.ok,true); });
   test('info expose le dossier, le port et les IP LAN', async () => {
     const i = await J('/api/info'); assert.ok(i.root.includes('FREESTREAM')); assert.equal(i.port,PORT); assert.ok(Array.isArray(i.lan));
@@ -61,7 +78,7 @@ describe('Serveur local — sécurité', () => {
   test('un nom de fichier dangereux est neutralisé (resté dans le dossier)', async () => {
     const r = await post('/api/save', { folder:'chants', name:'../../../hack.txt', data:'x' });
     const o = await r.json(); assert.ok(!o.name.includes('/')); assert.ok(!o.name.includes('..'));
-    assert.ok(fs.existsSync(path.join(ROOT,'donnees/chants',o.name)));
+    assert.ok(fs.existsSync(path.join(TMP,'donnees/chants',o.name)));
     await post('/api/delete', { folder:'chants', name:o.name });
   });
   test('dossier inconnu refusé', async () => {
@@ -152,7 +169,7 @@ describe('Serveur local — documents & médias', () => {
     await post('/api/delete',{folder:'medias',name:'clip-test.mp4'});
   });
   test('HTTP Range → 206 Partial Content (vidéo cherchable, 30 min fluide)', async () => {
-    const target = path.join(ROOT,'donnees/bibles/ls1910.json');
+    const target = path.join(TMP,'donnees/bibles/ls1910.json');
     const size = fs.statSync(target).size;
     const r = await fetch(BASE+'/donnees/bibles/ls1910.json',{headers:{Range:'bytes=100-199'}});
     assert.equal(r.status,206);
@@ -168,14 +185,14 @@ describe('Serveur local — documents & médias', () => {
     const src = path.join(TMP,'externe.txt'); fs.writeFileSync(src,'copie OK');
     const o = await (await post('/api/copy',{src,folder:'medias'})).json();
     assert.equal(o.copied,true);
-    assert.equal(fs.readFileSync(path.join(ROOT,'donnees/medias',o.name),'utf8'),'copie OK');
+    assert.equal(fs.readFileSync(path.join(TMP,'donnees/medias',o.name),'utf8'),'copie OK');
     await post('/api/delete',{folder:'medias',name:o.name});
   });
   test('renommage', async () => {
     await post('/api/save',{folder:'chants',name:'avant.json',data:{a:1}});
     const o = await (await post('/api/rename',{folder:'chants',old:'avant.json',new:'apres.json'})).json();
     assert.equal(o.name,'apres.json');
-    assert.ok(fs.existsSync(path.join(ROOT,'donnees/chants/apres.json')));
+    assert.ok(fs.existsSync(path.join(TMP,'donnees/chants/apres.json')));
     await post('/api/delete',{folder:'chants',name:'apres.json'});
   });
   test('duplication RÉELLE d’un fichier du projet (pas un simple toast)', async () => {
@@ -187,9 +204,9 @@ describe('Serveur local — documents & médias', () => {
     assert.equal(o.copied,true);
     assert.ok(o.name.includes('copie'), o.name);
     assert.notEqual(o.name,name);
-    const copied = JSON.parse(fs.readFileSync(path.join(ROOT,'donnees/chants',o.name),'utf8'));
+    const copied = JSON.parse(fs.readFileSync(path.join(TMP,'donnees/chants',o.name),'utf8'));
     assert.equal(copied.title,'Original');
-    assert.ok(fs.existsSync(path.join(ROOT,'donnees/chants',name)),'l’original est conservé');
+    assert.ok(fs.existsSync(path.join(TMP,'donnees/chants',name)),'l’original est conservé');
     // Une 2e duplication ne doit pas écraser la 1re.
     const o2 = await (await post('/api/duplicate',{folder:'chants',name})).json();
     assert.notEqual(o2.name,o.name);

@@ -38,9 +38,19 @@ const send = (res, code, body, headers = {}) => {
 const json = (res, code, obj, headers) => send(res, code, JSON.stringify(obj), { 'Content-Type': MIME['.json'], ...headers });
 const inside = p => { const r = path.resolve(p); return r === ROOT || r.startsWith(ROOT + path.sep); };
 const safe = rel => { const p = path.resolve(ROOT, '.' + path.sep + String(rel || '').replace(/^[/\\]+/, '')); return inside(p) ? p : null; };
+
+/**
+ * Isolation des DONNEES. Par defaut DATA_ROOT = ROOT (comportement normal).
+ * Les suites de test positionnent FREESTREAM_DATA_DIR sur un dossier temporaire :
+ * ainsi aucun test n'ecrit jamais dans le projet qui sera livre.
+ */
+const DATA_ROOT = process.env.FREESTREAM_DATA_DIR ? path.resolve(process.env.FREESTREAM_DATA_DIR) : ROOT;
+const insideData = p => { const r = path.resolve(p); return r === DATA_ROOT || r.startsWith(DATA_ROOT + path.sep); };
+const safeData = rel => { const p = path.resolve(DATA_ROOT, '.' + path.sep + String(rel || '').replace(/^[/\\]+/, '')); return insideData(p) ? p : null; };
+
 /** Seuls les dossiers de données déclarés sont accessibles en écriture. Jamais la racine. */
 const FOLDER_KEYS = new Set(Object.keys(FOLDERS));
-const folderDir = folder => FOLDER_KEYS.has(folder) ? safe(FOLDERS[folder]) : null;
+const folderDir = folder => FOLDER_KEYS.has(folder) ? safeData(FOLDERS[folder]) : null;
 /** Nom de fichier sûr : pas de séparateur, pas de « .. », pas de caractère de commande. */
 function safeName(s) {
   let n = path.basename(String(s || '').replace(/\\/g, '/'));
@@ -125,7 +135,7 @@ async function saveDoc({ folder, name, data }) {
   const dir = folderDir(folder); if (!dir) throw Object.assign(new Error('Dossier inconnu'), { code: 400 });
   await fsp.mkdir(dir, { recursive: true });
   const file = path.join(dir, b64name(name));
-  if (!inside(file)) throw Object.assign(new Error('Chemin refusé'), { code: 400 });
+  if (!insideData(file)) throw Object.assign(new Error('Chemin refusé'), { code: 400 });
   const content = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
   await fsp.writeFile(file, content);
   return { name: path.basename(file), size: Buffer.byteLength(content) };
@@ -134,7 +144,7 @@ async function saveDoc({ folder, name, data }) {
 async function deleteDoc({ folder, name }) {
   const dir = folderDir(folder); if (!dir) throw Object.assign(new Error('Dossier inconnu'), { code: 400 });
   const file = path.join(dir, path.basename(String(name)));
-  if (!inside(file)) throw Object.assign(new Error('Chemin refusé'), { code: 400 });
+  if (!insideData(file)) throw Object.assign(new Error('Chemin refusé'), { code: 400 });
   await fsp.rm(file, { force: true });
   return { ok: true };
 }
@@ -169,21 +179,35 @@ async function convertDoc(name, to = 'pdf') {
   if (!src || !fs.existsSync(src)) throw Object.assign(new Error('Fichier introuvable'), { code: 404 });
   const bin = await findSoffice();
   if (!bin) return { ok: false, reason: 'LibreOffice absent — installez-le ou exportez vos diapositives en PNG/PDF.' };
-  const outDir = path.join(ROOT, FOLDERS.medias, '.converti');
+  const outDir = path.join(DATA_ROOT, FOLDERS.medias, '.converti');
   await fsp.mkdir(outDir, { recursive: true });
   const { stdout } = await execFileAsync(bin, ['--headless', '--nologo', '--nodefault', '--convert-to', to, '--outdir', outDir, src], { timeout: 180000 });
   const produced = path.join(outDir, path.basename(src, path.extname(src)) + '.' + to);
   if (!fs.existsSync(produced)) return { ok: false, reason: 'Conversion non produite', detail: stdout };
   const finalName = path.basename(src, path.extname(src)) + '.' + to;
-  await fsp.copyFile(produced, path.join(ROOT, FOLDERS.medias, finalName));
+  await fsp.copyFile(produced, path.join(DATA_ROOT, FOLDERS.medias, finalName));
   return { ok: true, name: finalName };
 }
 
 /* ------------------------------------------------------------------ statique + RANGE */
+function resolveStatic(rel) {
+  const clean = String(rel || '').replace(/^\/+/, '');
+  // Les donnees sont servies depuis DATA_ROOT (isole pour les tests).
+  if (clean === 'donnees' || clean.startsWith('donnees/')) {
+    const p = path.resolve(DATA_ROOT, '.' + path.sep + clean);
+    if (insideData(p) && fs.existsSync(p)) return p;
+    // Repli : si ce dossier de travail ne contient pas encore la ressource,
+    // on sert la version integree au projet (Bibles et chants de demonstration).
+    // Les fichiers crees par l'utilisateur restent prioritaires dans DATA_ROOT.
+    if (DATA_ROOT !== ROOT) { const q = safe('/' + clean); if (q && fs.existsSync(q)) return q; }
+    return insideData(p) ? p : null;
+  }
+  return safe(rel);
+}
 async function serveStatic(req, res, urlPath) {
   let rel = decodeURIComponent(urlPath.split('?')[0]);
   if (rel === '/' || rel === '') rel = '/index.html';
-  const file = safe(rel);
+  const file = resolveStatic(rel);
   if (!file) return send(res, 403, 'Accès refusé');
   let st;
   try { st = await fsp.stat(file); } catch { return send(res, 404, 'Introuvable : ' + rel); }
@@ -264,11 +288,11 @@ async function api(req, res, u) {
     const b = await readJson(req);
     const dir = folderDir(b.folder); if (!dir) throw Object.assign(new Error('Dossier inconnu'), { code: 400 });
     const from = path.join(dir, path.basename(String(b.name || '')));
-    if (!inside(from) || !fs.existsSync(from)) throw Object.assign(new Error('Fichier introuvable'), { code: 404 });
+    if (!insideData(from) || !fs.existsSync(from)) throw Object.assign(new Error('Fichier introuvable'), { code: 404 });
     const ext = path.extname(from), stem = path.basename(from, ext);
     let to = path.join(dir, `${stem} (copie)${ext}`), n = 2;
     while (fs.existsSync(to)) to = path.join(dir, `${stem} (copie ${n++})${ext}`);
-    if (!inside(to)) throw Object.assign(new Error('Chemin refusé'), { code: 400 });
+    if (!insideData(to)) throw Object.assign(new Error('Chemin refusé'), { code: 400 });
     await fsp.copyFile(from, to);
     return json(res, 200, { ok: true, name: path.basename(to), size: (await fsp.stat(to)).size, copied: true });
   }
@@ -277,7 +301,7 @@ async function api(req, res, u) {
     const dir = folderDir(b.folder); if (!dir) throw Object.assign(new Error('Dossier inconnu'), { code: 400 });
     const from = path.join(dir, path.basename(String(b.old || '')));
     const to = path.join(dir, b64name(String(b.new || '')));
-    if (!inside(from) || !inside(to)) throw Object.assign(new Error('Chemin refusé'), { code: 400 });
+    if (!insideData(from) || !insideData(to)) throw Object.assign(new Error('Chemin refusé'), { code: 400 });
     if (!fs.existsSync(to)) await fsp.rename(from, to);
     return json(res, 200, { ok: true, name: path.basename(to) });
   }
@@ -292,7 +316,7 @@ async function api(req, res, u) {
     const dir = folderDir(folder); if (!dir) throw Object.assign(new Error('Dossier inconnu'), { code: 400 });
     await fsp.mkdir(dir, { recursive: true });
     const file = path.join(dir, b64name(decodeURIComponent(String(name || 'fichier'))));
-    if (!inside(file)) throw Object.assign(new Error('Chemin refusé'), { code: 400 });
+    if (!insideData(file)) throw Object.assign(new Error('Chemin refusé'), { code: 400 });
     await fsp.writeFile(file, buf);
     return json(res, 200, { name: path.basename(file), size: buf.length, copied: true });
   }
@@ -308,7 +332,7 @@ async function api(req, res, u) {
     const ips = [];
     for (const list of Object.values(os.networkInterfaces())) for (const i of list || [])
       if (i.family === 'IPv4' && !i.internal) ips.push(i.address);
-    return json(res, 200, { root: ROOT, port: PORT, host: req.headers.host, lan: [...new Set(ips)], soffice: !!(await findSoffice()), node: process.version });
+    return json(res, 200, { root: ROOT, dataRoot: DATA_ROOT, port: PORT, host: req.headers.host, lan: [...new Set(ips)], soffice: !!(await findSoffice()), node: process.version });
   }
   if (p === '/api/health') return json(res, 200, { ok: true, rev: state.rev, clients: clients.size, uptime: process.uptime() });
   if (p === '/api/shutdown' && req.method === 'POST') {
@@ -338,7 +362,7 @@ const server = http.createServer(async (req, res) => {
 server.requestTimeout = 0;
 server.headersTimeout = 0;
 server.listen(PORT, HOST, async () => {
-  await fsp.mkdir(path.join(ROOT, FOLDERS.medias), { recursive: true });
+  await fsp.mkdir(path.join(DATA_ROOT, FOLDERS.medias), { recursive: true });
   for (const f of Object.values(FOLDERS)) await fsp.mkdir(safe(f), { recursive: true });
   persistSoon();
   const ips = [];

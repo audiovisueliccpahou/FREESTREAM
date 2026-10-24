@@ -16,6 +16,7 @@ import os from 'node:os';
 import path from 'node:path';
 import net from 'node:net';
 import zlib from 'node:zlib';
+import { prepareTestData } from './setup.mjs';
 
 const ROOT = process.cwd();
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'fs-browser-'));
@@ -79,9 +80,10 @@ async function launch() {
 
 before(async () => {
   PORT = await freePort(); BASE = `http://127.0.0.1:${PORT}`;
+  prepareTestData(TMP, ROOT);
   child = spawn(process.execPath, ['server.js', String(PORT)], {
     cwd: ROOT,
-    env: { ...process.env, FREESTREAM_HOST: '127.0.0.1', FREESTREAM_STATE_FILE: path.join(TMP, 'state.json'), FREESTREAM_STATE_JS: path.join(TMP, 'live.js') },
+    env: { ...process.env, FREESTREAM_HOST:'127.0.0.1', FREESTREAM_DATA_DIR:TMP, FREESTREAM_STATE_FILE: path.join(TMP, 'state.json'), FREESTREAM_STATE_JS: path.join(TMP, 'live.js') },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   child.stderr.on('data', d => process.stderr.write(d));
@@ -286,7 +288,7 @@ describe('Navigateur réel — sorties OBS', () => {
     if (!browser) return ctx.skip('navigateur indisponible : ' + skipReason);
     // PNG 1×3 volontairement très éloigné du 16:9.
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAADCAYAAABS3WWCAAAAFUlEQVR4nGP8z8DAwMDAxAADCBYAG10QAc/4H9sAAAAASUVORK5CYII=', 'base64');
-    const target = path.join(ROOT, 'donnees', 'medias', '__test-vignette.png');
+    const target = path.join(TMP, 'donnees', 'medias', '__test-vignette.png');
     fs.writeFileSync(target, png);
     const p = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
     const errs = []; p.on('pageerror', e => errs.push(e.message));
