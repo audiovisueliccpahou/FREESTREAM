@@ -174,7 +174,8 @@ function paintLayers(){
     <button class="btn xs up" data-id="${esc(l.id)}">↑</button><button class="btn xs dn" data-id="${esc(l.id)}">↓</button>
     <button class="btn xs danger rm" data-id="${esc(l.id)}">✕</button></div>`).join('') || '<div class="empty">Aucun calque.</div>';
   box.onclick=e=>{
-    const b=e.target.closest('button'); const id=b?.dataset.id;
+    const b=e.target.closest('button'); const id=b?.dataset.id || e.target.closest('.layer-row')?.dataset.id;
+    if(!id)return;
     if(b?.classList.contains('rm')){ d().layers=d().layers.filter(x=>x.id!==id); selected=null; commit(); rebuild(); return; }
     if(b?.classList.contains('vis')){ const l=d().layers.find(x=>x.id===id); l.visible=l.visible===false; commit(); rebuild(); return; }
     if(b?.classList.contains('up')||b?.classList.contains('dn')){

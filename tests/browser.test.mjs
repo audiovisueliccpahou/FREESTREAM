@@ -360,6 +360,49 @@ describe('Navigateur réel — sorties OBS', () => {
     await plein.close(); await bas.close(); await regie.close();
   });
 
+  test('une modification de design est appliquée à OBS sans renvoyer le contenu', async (ctx) => {
+    if (!browser) return ctx.skip('navigateur indisponible : ' + skipReason);
+    const getState=async()=>await (await fetch(BASE+'/api/state')).json();
+    const initial=await getState();
+    const original=structuredClone(initial.designs['bible:plein']);
+    const edited=structuredClone(original);
+    const content=edited.layers.find(l=>l.type==='text'&&l.role==='content');
+    assert.ok(content,'le design Bible possède un calque contenu');
+    content.style.color='#ffffff';
+    edited.background={...edited.background,kind:'color',color:'#000000'};
+    await fetch(BASE+'/api/patch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patch:{
+      designs:{'bible:plein':edited},
+      live:{tool:'bible',blackout:false,fullscreen:{tool:'bible',key:'design-live-stable',designId:'bible:plein',vars:{reference:'TEST DESIGN',content:'Le contenu déjà envoyé reste affiché.'}},lower:null,lowerthird:null},
+    }})});
+    const obs=await browser.newPage({viewport:{width:1280,height:720}});
+    await obs.goto(BASE+'/outputs/plein.html',{waitUntil:'domcontentloaded'});
+    const regie=await browser.newPage({viewport:{width:1600,height:900}});
+    await regie.goto(BASE+'/regie.html',{waitUntil:'domcontentloaded'});
+    await regie.waitForSelector('#pv-work-plein .fs-text-layer[data-role="content"] .fs-text-inner');
+    const text=obs.locator('.fs-text-layer[data-role="content"] .fs-text-inner');
+    await text.waitFor({state:'visible'});
+    assert.equal(await text.evaluate(el=>getComputedStyle(el).color),'rgb(255, 255, 255)');
+    await regie.locator('#nav .navbtn[data-t="designs"]').click();
+    const designer=regie.locator('#main>.module-pane.active[data-module-pane="designs"]');
+    await designer.locator('#d-key').selectOption('bible:plein');
+    await designer.locator('#d-layers .layer-row').filter({hasText:'content'}).first().click();
+    const textColor=designer.locator('#d-props input[data-p="color"]');
+    await textColor.evaluate(el=>{el.value='#ff0000';el.dispatchEvent(new Event('input',{bubbles:true}));});
+    const bgColor=designer.locator('#d-bg input[data-b="color"]');
+    await bgColor.evaluate(el=>{el.value='#123456';el.dispatchEvent(new Event('input',{bubbles:true}));});
+    await designer.locator('#d-save').click();
+    await obs.waitForFunction(()=>getComputedStyle(document.querySelector('.fs-text-layer[data-role="content"] .fs-text-inner')).color==='rgb(255, 0, 0)');
+    await regie.waitForFunction(()=>getComputedStyle(document.querySelector('#pv-work-plein .fs-text-layer[data-role="content"] .fs-text-inner')).color==='rgb(255, 0, 0)');
+    assert.equal(await obs.locator('.fs-text-layer[data-role="content"] .fs-text-inner').evaluate(el=>getComputedStyle(el).color),'rgb(255, 0, 0)','le style du texte se met à jour à chaud');
+    assert.equal(await regie.locator('#pv-work-plein .fs-text-layer[data-role="content"] .fs-text-inner').evaluate(el=>getComputedStyle(el).color),'rgb(255, 0, 0)','l’aperçu de travail reste synchronisé avec OBS');
+    assert.ok(await obs.locator('#root .fs-bg').evaluate(el=>el.style.background.includes('18, 52, 86')||el.style.background==='#123456'),'le fond du design se met aussi à jour');
+    const after=await getState();
+    assert.equal(after.live.fullscreen.key,'design-live-stable','le contenu n’a pas été renvoyé ni remplacé');
+    assert.equal(await obs.locator('.fs-text-layer[data-role="content"] .fs-text-inner').innerText(),'Le contenu déjà envoyé reste affiché.');
+    await fetch(BASE+'/api/patch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patch:{designs:{'bible:plein':original},live:{tool:null,fullscreen:null,lower:null,blackout:false}}})});
+    await obs.close();await regie.close();
+  });
+
   test('Bible : le plein écran reste FIGÉ pendant toutes les sections du bas centré', async (ctx) => {
     if (!browser) return ctx.skip('navigateur indisponible : ' + skipReason);
     // État propre pour un test indépendant de l'ordre d'exécution.

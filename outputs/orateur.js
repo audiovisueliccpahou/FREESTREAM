@@ -9,16 +9,19 @@ const root = document.getElementById('root');
 const msgEl = document.getElementById('message');
 const msgBody = document.getElementById('message-body');
 const badge = document.getElementById('badge');
-let stage = null, designId = null, lastKey = '';
+let stage = null, designId = null, designSignature = '', lastKey = '';
+const signatureOf = d => { try { return JSON.stringify(d || null); } catch { return String(d?.id || ''); } };
 
 function apply(s) {
   const p = s.live?.blackout ? null : s.live?.fullscreen;
   if (!p) { root.style.opacity = '0'; }
   else {
     const d = s.designs?.[p.designId] || s.designs?.[`${p.tool}:plein`];
-    if (!stage || designId !== d?.id) { stage?.destroy(); stage = new Stage(root, { design: d }); designId = d?.id; lastKey = ''; }
+    const signature = signatureOf(d);
+    if (!stage || designId !== d?.id) { stage?.destroy(); stage = new Stage(root, { design: d }); designId = d?.id; designSignature = signature; lastKey = ''; }
+    else if (designSignature !== signature) { stage.setDesign(d); designSignature = signature; lastKey = ''; }
     root.style.opacity = '1';
-    const key = `${d?.id}|${p.key || JSON.stringify(p.vars)}`;
+    const key = `${signature}|${p.key || JSON.stringify(p.vars)}`;
     if (key !== lastKey) {
       lastKey = key;
       const m = p.media || {};

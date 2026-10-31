@@ -65,8 +65,11 @@ export function pickFile(accept = '*/*', multiple = false) {
 export const fmtTime = ms => { const s = Math.max(0, Math.floor(ms/1000)); return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; };
 
 /* --------------------------------------------------- aperçus de TRAVAIL */
-const workStages = { plein: null, bas: null };
-let workDesignIds = { plein: null, bas: null };
+const workStages = { plein: null, bas: null, coeur: null };
+let workDesignIds = { plein: null, bas: null, coeur: null };
+let workDesignSignatures = { plein: '', bas: '', coeur: '' };
+let workPayloads = { plein: null, bas: null, coeur: null };
+const designSignature = design => { try { return JSON.stringify(design || null); } catch { return String(design?.id || ''); } };
 
 export function initWorkPreviews() {
   for (const k of ['plein','bas','coeur']) {
@@ -74,8 +77,10 @@ export function initWorkPreviews() {
     const host = $(`#pv-work-${k}`) || $(`#pv-work-${k} .stage-host`);
     if (!host) continue;
     const initial = k === 'coeur' ? 'chants:coeur' : `bible:${k}`;
-    workStages[k] = new Stage(host, { design: store.state.designs?.[initial] });
+    const design=store.state.designs?.[initial];
+    workStages[k] = new Stage(host, { design });
     workDesignIds[k] = initial;
+    workDesignSignatures[k] = designSignature(design);
   }
 }
 
@@ -86,10 +91,30 @@ export function setWork({ plein, bas, coeur } = {}) {
     if (!st || !p) continue;
     const design = store.state.designs?.[p.designId];
     if (!design) continue;
-    if (workDesignIds[k] !== p.designId) { st.setDesign(design); workDesignIds[k] = p.designId; }
+    const signature=designSignature(design);
+    if (workDesignIds[k] !== p.designId || workDesignSignatures[k] !== signature) {
+      st.setDesign(design); workDesignIds[k] = p.designId; workDesignSignatures[k]=signature;
+    }
+    workPayloads[k]={designId:p.designId,vars:p.vars||{},media:p.media||{}};
     st.update(p.vars || {}, { media: p.media || {}, animate: true, transition: design.transition });
   }
 }
+
+// Maintient les aperçus TRAVAIL en phase avec le design actif, même quand la
+// régie est sur l'éditeur et qu'aucun nouveau verset/chant n'est envoyé.
+store.on(state => {
+  for(const k of ['plein','bas','coeur']){
+    const st=workStages[k], payload=workPayloads[k];
+    const id=payload?.designId||workDesignIds[k];
+    const design=id&&state.designs?.[id];
+    if(!st||!design)continue;
+    const signature=designSignature(design);
+    if(signature===workDesignSignatures[k])continue;
+    st.setDesign(design);
+    workDesignIds[k]=id;workDesignSignatures[k]=signature;
+    st.update(payload?.vars||st.vars||{},{media:payload?.media||{},animate:false,transition:design.transition});
+  }
+});
 
 /* --------------------------------------------------- envoi vers OBS */
 /**

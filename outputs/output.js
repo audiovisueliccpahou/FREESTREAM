@@ -23,8 +23,16 @@ await store.init({ role: 'output', id: `${TYPE}:${TOOL}:${OUT_ID}` });
 
 let baseStage = null, overlayStage = null;
 let baseDesignId = null, overlayDesignId = null;
+let baseDesignSignature = '', overlayDesignSignature = '';
 let lastBaseKey = '', lastOverlayKey = '';
 let hideTimer = null;
+
+// Les sorties sont persistantes : comparer seulement design.id figeait l'ancien
+// Stage après une édition (l'identifiant reste le même). La signature déclenche
+// setDesign sur le Stage existant dès que l'éditeur diffuse une modification.
+function designSignature(design) {
+  try { return JSON.stringify(design || null); } catch { return String(design?.id || ''); }
+}
 
 function designFor(state, payload, fallbackTool, fallbackType) {
   if (OUT_ID && state.designs?.[`out:${OUT_ID}`]) return state.designs[`out:${OUT_ID}`];
@@ -74,11 +82,16 @@ function apply(state) {
   } else {
     const d = designFor(state, p, p.tool || state.live.tool,
       TYPE === 'bas' ? 'bas' : TYPE === 'coeur' ? 'coeur' : 'plein');
-    const key = `${d?.id}|${p.key || JSON.stringify(p.vars)}`;
+    const signature = designSignature(d);
+    const key = `${signature}|${p.key || JSON.stringify(p.vars)}`;
     if (!baseStage || baseDesignId !== d?.id) {
       if (baseStage) baseStage.destroy();
       baseStage = new Stage(root, { design: d, onOverflow: warn });
-      baseDesignId = d?.id; lastBaseKey = '';
+      baseDesignId = d?.id; baseDesignSignature = signature; lastBaseKey = '';
+    } else if (baseDesignSignature !== signature) {
+      baseStage.setDesign(d);
+      baseDesignSignature = signature;
+      lastBaseKey = '';
     }
     baseStage.bgEl.style.opacity = '1';
     baseStage.textEl.style.opacity = '1';
@@ -97,11 +110,16 @@ function apply(state) {
     clearTimeout(hideTimer);
   } else {
     const d = designFor(state, { designId: lt.designId }, 'lowerthird', (lt.target || 'bas'));
-    const key = `${d?.id}|${lt.id}|${lt.startedAt}`;
+    const signature = designSignature(d);
+    const key = `${signature}|${lt.id}|${lt.startedAt}`;
     if (!overlayStage || overlayDesignId !== d?.id) {
       if (overlayStage) overlayStage.destroy();
       overlayStage = new Stage(overlayRoot, { design: d, onOverflow: warn });
-      overlayDesignId = d?.id; lastOverlayKey = '';
+      overlayDesignId = d?.id; overlayDesignSignature = signature; lastOverlayKey = '';
+    } else if (overlayDesignSignature !== signature) {
+      overlayStage.setDesign(d);
+      overlayDesignSignature = signature;
+      lastOverlayKey = '';
     }
     overlayRoot.style.display = '';
     overlayStage.bgEl.style.opacity = '1';
