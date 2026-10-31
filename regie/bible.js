@@ -53,71 +53,74 @@ function render() {
 function renderLecture(box) {
   const b = B();
   box.innerHTML = `
-    <div class="card tight" style="margin-bottom:12px">
-      <div class="grid2" style="grid-template-columns:2fr 1fr 1fr">
-        <div class="field bible-search" style="margin:0">
-          <label class="lbl">Livre</label>
-          <input class="inp" id="b-book" autocomplete="off" placeholder="es… → Esther" value="${esc(b.book)}">
+    <div class="op-workspace op-bible-workspace">
+      <aside class="op-library-panel" aria-label="Livres de la Bible">
+        <div class="op-panel-heading"><div><strong>Livres</strong><span id="b-book-count" class="op-panel-count"></span></div></div>
+        <div class="op-list-search bible-search">
+          <input class="inp" id="b-book" autocomplete="off" placeholder="Chercher un livre (ex. Jean)…" value="">
           <div class="suggest hidden" id="b-sug"></div>
         </div>
-        <div class="field" style="margin:0"><label class="lbl">Chapitre</label><input class="inp" id="b-chap" inputmode="numeric" value="${b.chapter}"></div>
-        <div class="field" style="margin:0"><label class="lbl">Verset</label><input class="inp" id="b-verse" inputmode="numeric" value="${b.verse}"></div>
-      </div>
-      <div class="row" style="margin-top:10px">
-        <button class="btn primary" id="b-go">Afficher ↵</button>
-        <button class="btn" id="b-prev">◀ Verset</button>
-        <button class="btn" id="b-next">Verset ▶</button>
-        <span class="spacer"></span>
-        <label class="chk"><input type="checkbox" id="b-split" ${b.splitMode?'checked':''}> Découpage bas centré</label>
-        <label class="chk"><input type="checkbox" id="b-mirror" ${b.mirrorToPlein?'checked':''}> Plein = bas (grand)</label>
-      </div>
-    </div>
+        <div class="op-list-scroll" id="b-book-list"></div>
+        <div class="op-library-footer"><span class="pill">${esc(primary()?.name || 'Aucune version')}</span><button class="btn xs" id="b-versions-shortcut">+ Version</button></div>
+      </aside>
 
-    <div class="grid2" style="grid-template-columns:1fr 1fr;align-items:start">
-      <div class="card tight">
-        <div class="row" style="justify-content:space-between;margin-bottom:8px"><strong>Versets du chapitre</strong><span class="muted small" id="b-count"></span></div>
-        <div class="verse-grid" id="b-grid"></div>
-      </div>
-      <div class="card tight">
-        <div class="row" style="justify-content:space-between;margin-bottom:8px"><strong>Sections du bas centré</strong><span class="muted small" id="b-parts-count"></span></div>
-        <div class="parts-bar" id="b-parts"></div>
-        <div class="hint" style="margin-top:10px">En mode découpage : les flèches font défiler d'abord les sections du bas centré. Le plein écran ne bouge qu'une fois toutes les sections affichées.</div>
-      </div>
-    </div>
+      <section class="op-work-panel">
+        <div class="op-work-panel-header bible-work-head">
+          <div class="op-active-identity"><span class="op-tool-kicker">BIBLE · VERSION ACTIVE</span><strong id="b-active-book">${esc(b.book)}</strong><span id="b-count" class="muted small"></span></div>
+          <div class="op-smart-nav">
+            <label><span>Chapitre</span><input class="inp" id="b-chap" inputmode="numeric" value="${b.chapter}" aria-label="Chapitre"></label>
+            <label><span>Verset</span><input class="inp" id="b-verse" inputmode="numeric" value="${b.verse}" aria-label="Verset"></label>
+            <button class="btn primary" id="b-go" title="Charger le chapitre et le verset">Aller ↵</button>
+          </div>
+        </div>
 
-    <div class="card tight" style="margin-top:12px">
-      <div class="row" style="justify-content:space-between;margin-bottom:8px"><strong>Texte affiché — toutes les mises en forme</strong><span class="pill" id="b-ref"></span></div>
-      <div class="verrow"><span class="tag" id="b-vtag">—</span><div class="grow" id="b-editor-host"></div></div>
-      <div class="hint">Gras, italique, souligné, barré, couleur, surlignage, exposant, taille… Chaque modification est enregistrée automatiquement pour ce verset et cette version.</div>
-      <div class="sep"></div>
-      <div class="row">
-        <button class="btn primary" id="b-send-p">Plein écran <kbd>F</kbd></button>
-        <button class="btn blue" id="b-send-b">Bas centré <kbd>S</kbd></button>
-        <button class="btn" id="b-send-both">Les deux</button>
-        <button class="btn danger" id="b-clear">Masquer</button>
-      </div>
-    </div>
+        <div class="op-chapter-row"><span class="op-section-label">CHAPITRES</span><div class="op-chapter-strip" id="b-chapters"></div></div>
+        <div class="op-reading-options">
+          <label class="chk"><input type="checkbox" id="b-split" ${b.splitMode?'checked':''}> Découpage du bas centré</label>
+          <label class="chk"><input type="checkbox" id="b-mirror" ${b.mirrorToPlein?'checked':''}> Même texte en plein</label>
+          <span class="spacer"></span>
+          <button class="btn xs" id="b-prev">◀ Précédent</button><button class="btn xs" id="b-next">Suivant ▶</button>
+        </div>
 
-    <div class="card tight" style="margin-top:12px">
-      <div class="row" style="justify-content:space-between;margin-bottom:8px"><strong>Versions affichées simultanément</strong><span class="muted small">jusqu'à 3, empilées</span></div>
-      <div id="b-vers"></div>
-      <div class="hint">Changer de version ne déplace PAS le verset : la référence reste la même, seul le texte change.</div>
+        <div class="op-verses-heading"><div><strong>Jean ${b.chapter} — choisissez un verset</strong><span id="b-parts-count" class="muted small"></span></div><span class="pill acc" id="b-ref">—</span></div>
+        <div class="op-verse-scroll"><div class="op-verse-list" id="b-grid"></div></div>
+
+        <div class="op-current-verse">
+          <div class="op-current-head"><span class="op-tool-kicker">VERSET SÉLECTIONNÉ</span><span class="pill" id="b-vtag">—</span></div>
+          <div class="op-current-reading" id="b-reading" aria-live="polite">Choisissez un verset dans la liste pour le lire ici.</div>
+          <div class="op-parts-row"><span class="op-section-label">SECTIONS · BAS CENTRÉ</span><div class="parts-bar" id="b-parts"></div></div>
+          <details class="op-verse-editor"><summary>Modifier / annoter le texte affiché</summary><div id="b-editor-host"></div></details>
+          <details class="op-version-details"><summary>Versions affichées simultanément</summary><div id="b-vers"></div></details>
+          <div class="row op-send-row">
+            <button class="btn primary" id="b-send-p">Plein écran <kbd>F</kbd></button>
+            <button class="btn blue" id="b-send-b">Bas centré <kbd>S</kbd></button>
+            <button class="btn" id="b-send-both">Les deux</button>
+            <button class="btn danger" id="b-clear">Masquer</button>
+          </div>
+        </div>
+      </section>
     </div>`;
 
   const bookIn = $('#b-book', box), chapIn = $('#b-chap', box), verseIn = $('#b-verse', box);
-  bookIn.addEventListener('input', () => { showSuggest(bookIn.value); });
-  bookIn.addEventListener('focus', () => showSuggest(bookIn.value));
+  paintBookList(''); paintChapters();
+  bookIn.addEventListener('input', () => {
+    const query=bookIn.value.trim();
+    if(query) showSuggest(query); else $('#b-sug',box)?.classList.add('hidden');
+    paintBookList(query);
+  });
+  bookIn.addEventListener('focus', () => { if(bookIn.value.trim()) showSuggest(bookIn.value); });
   bookIn.addEventListener('blur', () => setTimeout(() => $('#b-sug',box)?.classList.add('hidden'), 160));
   bookIn.addEventListener('keydown', e => {
     if (e.key === 'ArrowDown') { e.preventDefault(); suggestHi = Math.min(suggestList.length-1, suggestHi+1); paintSuggest(); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); suggestHi = Math.max(0, suggestHi-1); paintSuggest(); }
     else if (e.key === 'Enter') {
       e.preventDefault();
-      const first = suggestList[suggestHi] || suggestList[0];
-      if (first) { store.patch({ bible:{ book:first.name, chapter:1, verse:1, partIndex:0 } }); bookIn.value = first.name; chapIn.value = 1; verseIn.value = 1; }
+      const first = bookIn.value.trim() ? (suggestList[suggestHi] || suggestList[0]) : null;
+      if (!first) return;
+      store.patch({ bible:{ book:first.name, chapter:1, verse:1, partIndex:0 } }); bookIn.value = ''; chapIn.value = 1; verseIn.value = 1;
       $('#b-sug',box)?.classList.add('hidden');
-      chapIn.focus(); chapIn.select();
       recalc(); render();
+      $('#b-chap',host)?.focus(); $('#b-chap',host)?.select();
     } else if (e.key === 'Escape') $('#b-sug',box)?.classList.add('hidden');
   });
   chapIn.addEventListener('keydown', e => {
@@ -127,6 +130,7 @@ function renderLecture(box) {
   chapIn.addEventListener('change', () => applyInputs());
   verseIn.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); applyInputs(); } });
   $('#b-go',box).onclick = applyInputs;
+  $('#b-versions-shortcut',box).onclick = () => { sub='versions'; $$('#bib-sub .subtab',host).forEach(x=>x.classList.toggle('on',x.dataset.s==='versions')); render(); };
   $('#b-prev',box).onclick = () => step(-1);
   $('#b-next',box).onclick = () => step(1);
   $('#b-split',box).onchange = e => { store.patch({ bible:{ splitMode:e.target.checked, partIndex:0 } }); recalc(); render(); };
@@ -141,20 +145,22 @@ function renderLecture(box) {
 
   renderVersionsList();
   recalc();
+  paintBookList(''); paintChapters();
   paintVerseGrid();
   paintParts();
   paintText();
 }
 
 function applyInputs() {
-  const book = $('#b-book',host).value.trim();
+  const bookInput = $('#b-book',host).value.trim();
+  const book = bookInput || B().book;
   const parsed = parseReference(`${book} ${$('#b-chap',host).value} ${$('#b-verse',host).value}`);
   if (!parsed?.book) { toast('Livre introuvable — essayez les premières lettres', 'err'); return; }
   store.patch({ bible:{ book:parsed.book.name, chapter:parsed.chapter, verse:parsed.verse, toVerse:parsed.toVerse, partIndex:0 } });
-  $('#b-book',host).value = parsed.book.name;
+  $('#b-book',host).value = '';
   $('#b-chap',host).value = parsed.chapter;
   $('#b-verse',host).value = parsed.verse;
-  recalc(); paintVerseGrid(); paintParts(); paintText(); refreshPreview();
+  recalc(); paintBookList(''); paintChapters(); paintVerseGrid(); paintParts(); paintText(); refreshPreview();
 }
 
 function showSuggest(q) {
@@ -167,8 +173,8 @@ function paintSuggest() {
   sug.innerHTML = suggestList.length ? suggestList.map((b,i)=>`<div class="${i===suggestHi?'hi':''}" data-i="${i}"><span>${esc(b.name)}</span><span class="abbr">${esc(b.id.toUpperCase())} · ${b.chapters} ch.</span></div>`).join('') : '<div class="muted">Aucun livre</div>';
   sug.onclick = e => { const d = e.target.closest('[data-i]'); if (!d) return; const b = suggestList[+d.dataset.i];
     store.patch({ bible:{ book:b.name, chapter:1, verse:1, partIndex:0 } }); sug.classList.add('hidden');
-    $('#b-book',host).value = b.name; $('#b-chap',host).value = 1; $('#b-verse',host).value = 1;
-    $('#b-chap',host).focus(); $('#b-chap',host).select(); recalc(); render(); };
+    $('#b-book',host).value = ''; $('#b-chap',host).value = 1; $('#b-verse',host).value = 1;
+    recalc(); render(); $('#b-chap',host)?.focus(); $('#b-chap',host)?.select(); };
 }
 
 async function currentTexts() {
@@ -200,22 +206,65 @@ function recalc() {
   const old = b.parts || [];
   if (JSON.stringify(old) !== JSON.stringify(parts)) store.patch({ bible:{ parts, partIndex: Math.min(b.partIndex||0, parts.length-1) } });
 }
+function paintBookList(query='') {
+  const list = $('#b-book-list',host), count = $('#b-book-count',host);
+  if (!list) return;
+  const version = primary();
+  const available = Object.keys(version?.dataset?.books || {});
+  const availableNames = BOOKS.filter(book => available.includes(book.name));
+  const q = String(query||'').trim();
+  const found = q ? searchBooks(q, 66).filter(book=>availableNames.some(a=>a.id===book.id)) : availableNames;
+  if (count) count.textContent = `${availableNames.length} disponibles`;
+  list.innerHTML = found.length ? found.map(book=>`<button class="op-book-row ${book.name===B().book?'selected':''}" data-book="${esc(book.name)}" type="button">
+      <span class="op-book-abbr">${esc(book.id.toUpperCase())}</span><span class="op-book-name">${esc(book.name)}</span><span class="op-book-meta">${book.chapters}</span>
+    </button>`).join('') : '<div class="op-empty">Aucun livre trouvé dans cette version.</div>';
+  list.onclick = e => {
+    const row=e.target.closest('[data-book]'); if(!row) return;
+    store.patch({bible:{book:row.dataset.book,chapter:1,verse:1,toVerse:null,partIndex:0}});
+    $('#b-book',host).value=''; $('#b-chap',host).value='1'; $('#b-verse',host).value='1';
+    recalc(); paintBookList(''); paintChapters(); paintVerseGrid(); paintParts(); paintText(); refreshPreview();
+  };
+}
+
+function paintChapters() {
+  const strip=$('#b-chapters',host), b=B(), version=primary(); if(!strip) return;
+  const chapters=Object.keys(version?.dataset?.books?.[b.book]||{}).map(Number).sort((a,c)=>a-c);
+  strip.innerHTML=chapters.length?chapters.map(ch=>`<button class="op-chapter-btn ${ch===b.chapter?'selected':''}" data-chapter="${ch}" type="button">${ch}</button>`).join(''):'<span class="op-empty-inline">Aucun chapitre importé pour ce livre.</span>';
+  strip.onclick=e=>{const btn=e.target.closest('[data-chapter]');if(!btn)return;
+    store.patch({bible:{chapter:+btn.dataset.chapter,verse:1,toVerse:null,partIndex:0}});
+    $('#b-chap',host).value=btn.dataset.chapter;$('#b-verse',host).value='1';recalc();paintChapters();paintVerseGrid();paintParts();paintText();refreshPreview();};
+}
+
 function paintVerseGrid() {
   const grid = $('#b-grid',host), b = B(); if (!grid) return;
-  const v = primary(); if (!v) { grid.innerHTML = '<div class="empty">Aucune version chargée.</div>'; return; }
-  const ch = v.dataset?.books?.[b.book]?.[String(b.chapter)] || {};
-  const nums = Object.keys(ch).map(Number).sort((a,b)=>a-b);
+  const version = primary();
+  const ch = version?.dataset?.books?.[b.book]?.[String(b.chapter)] || {};
+  const nums = Object.keys(ch).map(Number).sort((a,c)=>a-c);
   const max = b.splitMaxChars || 150;
   grid.innerHTML = nums.length ? nums.map(n => {
-    const len = String(ch[n]||'').length;
-    const p = b.splitMode ? partsForLength(ch[n], max) : 1;
-    const long = b.splitMode && p > 1;
-    return `<button class="vbtn ${n===b.verse?'sel':''} ${long?'group-start':''}" data-v="${n}" title="${len} caractères${long?' · '+p+' sections':''}">${n}${long?`<sup style="font-size:9px;color:var(--accent)">${p}</sup>`:''}</button>`;
-  }).join('') : '<div class="muted small">Chapitre absent de cette version (démo). Importez la Bible complète.</div>';
-  grid.onclick = e => { const btn = e.target.closest('[data-v]'); if (!btn) return;
-    store.patch({ bible:{ verse:+btn.dataset.v, partIndex:0 } }); recalc(); paintVerseGrid(); paintParts(); paintText(); refreshPreview(); };
-  const c = $('#b-count',host); if (c) c.textContent = `${nums.length} versets${b.splitMode?' · regroupés par longueur':''}`;
+    const text=String(ch[n]||'');
+    const parts=b.splitMode?partsForLength(text,max):1;
+    const long=b.splitMode&&parts>1;
+    return `<article class="vbtn op-verse-card ${n===b.verse?'selected':''} ${long?'has-parts':''}" data-v="${n}" tabindex="0" role="button" aria-pressed="${n===b.verse}" title="${text.length} caractères${long?' · '+parts+' sections':''}">
+      <span class="op-verse-number">${n}</span><span class="op-verse-text">${esc(text)}</span>
+      <button type="button" class="op-verse-show" data-show-verse="${n}" title="Afficher ce verset dans les sorties">Afficher ↗</button>
+      ${long?`<span class="op-verse-part-count">${parts} sections</span>`:''}
+    </article>`;
+  }).join('') : '<div class="op-empty">Aucun verset dans ce chapitre. Importez une Bible complète dans « Versions & import ».</div>';
+  grid.onclick = e => {
+    const show=e.target.closest('[data-show-verse]');
+    const card=e.target.closest('[data-v]'); if(!card)return;
+    const verse=Number((show||card).dataset.showVerse || card.dataset.v);
+    store.patch({bible:{verse,toVerse:null,partIndex:0}});$('#b-verse',host).value=String(verse);
+    recalc();paintVerseGrid();paintParts();paintText();refreshPreview();
+    if(show) send('both');
+  };
+  grid.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-v]')){e.preventDefault();e.target.click();}};
+  const c=$('#b-count',host);if(c)c.textContent=`${nums.length} versets`;
+  const book=$('#b-active-book',host);if(book)book.textContent=b.book;
+  const title=$('.op-verses-heading strong',host);if(title)title.textContent=`${b.book} ${b.chapter} — choisissez un verset`;
 }
+
 function paintParts() {
   const box = $('#b-parts',host), b = B(); if (!box) return;
   const parts = b.parts || [''];
@@ -230,6 +279,7 @@ async function paintText() {
   const ref = formatRef(b.book, b.chapter, b.verse, b.toVerse);
   const set = (s,v) => { const e = $(s,host); if (e) e.textContent = v; };
   set('#b-ref', ref); set('#b-vtag', texts.map(t=>t.name).join(' + '));
+  const reading=$('#b-reading',host); if(reading) reading.innerHTML=texts.map((t,i)=>`<div class="op-reading-version ${i?'secondary':''}">${texts.length>1?`<small>${esc(t.name)}</small>`:''}${t.text}</div>`).join('');
   if (contentEdit && document.activeElement !== contentEdit.area) contentEdit.setValue(texts[0]?.text || '');
   refreshPreview(texts);
 }
@@ -298,7 +348,7 @@ async function step(delta) {
   store.patch({ bible:{ book:next.book, chapter:next.chapter, verse:next.verse, toVerse:null, partIndex:0 } });
   const bi = $('#b-chap',host), vi = $('#b-verse',host);
   if (bi) bi.value = next.chapter; if (vi) vi.value = next.verse;
-  recalc(); paintVerseGrid(); paintParts(); await paintText();
+  recalc(); paintBookList(''); paintChapters(); paintVerseGrid(); paintParts(); await paintText();
   if (store.state.live?.tool === 'bible') send('both');   // les deux avancent ensemble
 }
 function onKey(action) {

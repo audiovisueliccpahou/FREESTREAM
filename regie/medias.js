@@ -10,32 +10,26 @@ export async function mount(container) {
   host = container;
   host.innerHTML = `
     <div class="tool-head"><h1>🎬 Médias</h1><span class="pill acc">1 clic = aperçu · 2ᵉ clic = à l'antenne (OBS)</span></div>
-    <div class="row" style="margin-bottom:12px;flex-wrap:wrap">
-      <button class="btn primary" id="m-add">📥 Ajouter des fichiers</button>
-      <button class="btn" id="m-path">📂 Copier depuis un chemin</button>
-      <button class="btn" id="m-link">🔗 Ajouter un lien / YouTube</button>
-      <button class="btn" id="m-convert">🔄 Convertir PPTX/DOCX en PDF</button>
-      <span class="spacer"></span><input class="inp" id="m-q" placeholder="Rechercher…" style="width:220px" value="${esc(query)}">
-    </div>
-    <div class="grid2" style="grid-template-columns:1fr 1fr;align-items:start">
-      <div class="card tight"><div class="row" style="justify-content:space-between;margin-bottom:9px"><strong>Médiathèque</strong><span class="muted small" id="m-count"></span></div>
-        <div id="m-list" class="scroll" style="max-height:60vh"></div></div>
-      <div class="card tight">
-        <div class="row" style="justify-content:space-between;margin-bottom:9px"><strong>Aperçu de travail</strong><span class="pill" id="m-state">—</span></div>
-        <div class="playerbox" id="m-player"><div class="ph">Cliquez une fois sur un média pour l'apercevoir.</div></div>
-        <div class="media-ctrl" id="m-ctrl" style="margin-top:10px"></div>
-        <div class="sep"></div>
-        <div class="row" style="flex-wrap:wrap;gap:8px">
+    <div class="op-workspace op-media-workspace">
+      <aside class="op-library-panel" aria-label="Médiathèque">
+        <div class="op-panel-heading"><div><strong>Médiathèque</strong><span class="op-panel-count" id="m-count"></span></div></div>
+        <div class="op-media-add-actions"><button class="btn primary" id="m-add">📥 Ajouter des fichiers</button><button class="btn" id="m-path">📂 Copier chemin</button><button class="btn" id="m-link">🔗 Ajouter un lien</button><button class="btn" id="m-convert">🔄 Convertir PDF</button></div>
+        <div class="op-list-search"><input class="inp" id="m-q" placeholder="🔍 Rechercher un média…" value="${esc(query)}"></div>
+        <div id="m-list" class="op-list-scroll"></div>
+        <div class="op-library-footer"><span class="muted small">Les fichiers sont copiés dans le projet.</span></div>
+      </aside>
+      <section class="op-work-panel op-media-detail">
+        <div class="op-work-panel-header media-work-head"><div class="op-active-identity"><span class="op-tool-kicker">LECTEUR DE TRAVAIL</span><strong id="m-active">Sélectionnez un média</strong><span class="muted small">Préparez et vérifiez avant la diffusion</span></div><span class="pill" id="m-state">—</span></div>
+        <div class="op-media-player-area"><div class="playerbox" id="m-player"><div class="ph">Cliquez une fois sur un média pour l'apercevoir.</div></div></div>
+        <div class="media-ctrl" id="m-ctrl"></div>
+        <div class="op-media-options">
           <label class="chk" title="Si l'image ou la vidéo n'est pas en 16:9, un fond flouté inspiré du média comble tout l'écran au lieu des bandes noires"><input type="checkbox" id="m-vig" ${store.state.settings?.mediaVignette!==false?'checked':''}> Vignette de fond</label>
           <label class="chk" title="Recadre légèrement pour occuper 100 % de l'écran (le média réel est coupé sur les bords)"><input type="checkbox" id="m-cover" ${store.state.settings?.mediaCover?'checked':''}> Remplir (recadrer)</label>
           <span class="spacer"></span>
+          <button class="btn primary" id="m-send">📺 Envoyer vers OBS</button><button class="btn blue" id="m-send-bas">▭ Bas centré</button><button class="btn danger" id="m-clear">Masquer</button>
         </div>
-        <div class="hint">Par défaut le média est affiché <strong>sans recadrage</strong> et l'espace restant est comblé par une vignette floutée inspirée de lui : occupe tout l'écran, sans bande noire.</div>
-        <div class="sep"></div>
-        <div class="row"><button class="btn primary lg grow" id="m-send">📺 Envoyer vers OBS</button>
-          <button class="btn blue" id="m-send-bas">▭ Bas centré</button><button class="btn danger" id="m-clear">Masquer</button></div>
-        <div class="hint">La régie affiche deux aperçus distincts : « TRAVAIL » (ce que vous préparez) et « À L'ANTENNE » (ce qu'OBS diffuse réellement).</div>
-      </div>
+        <div class="op-media-footnote">Aperçu de travail au centre · sorties réellement à l’antenne dans les moniteurs à droite. Les médias non 16:9 sont complétés par une vignette inspirée du contenu.</div>
+      </section>
     </div>`;
   $('#m-add',host).onclick = addFiles;
   $('#m-path',host).onclick = addPath;
@@ -145,9 +139,10 @@ function paintPlayer() {
   const box = $('#m-player',host); if (!box) return;
   clearInterval(tick);
   box.innerHTML = '';
-  if (!sel) { box.innerHTML = '<div class="ph">Cliquez une fois sur un média pour l\'apercevoir.</div>'; $('#m-state',host).textContent='—'; paintCtrl(); return; }
+  if (!sel) { box.innerHTML = '<div class="ph">Cliquez une fois sur un média pour l\'apercevoir.</div>'; $('#m-state',host).textContent='—'; $('#m-active',host).textContent='Sélectionnez un média'; paintCtrl(); return; }
   const n = normalizeMediaUrl(sel.src);
   $('#m-state',host).textContent = sel.kind + (n.youtube?' · YouTube':'');
+  $('#m-active',host).textContent = sel.name;
   if (n.kind === 'image') { const im=document.createElement('img'); im.src=n.src; box.appendChild(im); }
   else if (n.kind === 'video') {
     const v=document.createElement('video'); v.src=n.src; v.controls=true; v.playsInline=true; v.preload='metadata';

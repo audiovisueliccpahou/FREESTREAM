@@ -143,6 +143,59 @@ describe('Navigateur réel — régie', () => {
     await p.close();
   });
 
+  test('Bible, chants et médias : bibliothèque à gauche, contenu lisible au centre, sorties conservées', async (ctx) => {
+    if (!browser) return ctx.skip('navigateur indisponible : ' + skipReason);
+    const p = await browser.newPage({ viewport: { width: 1600, height: 900 } });
+    const errors = [];
+    p.on('pageerror', e => errors.push(e.message));
+    await p.goto(BASE + '/regie.html', { waitUntil: 'domcontentloaded' });
+    await p.waitForSelector('.op-bible-workspace');
+    const workspace = await p.locator('.op-workspace').boundingBox();
+    const library = await p.locator('.op-library-panel').boundingBox();
+    const content = await p.locator('.op-work-panel').boundingBox();
+    assert.ok(workspace && library && content && content.width > library.width * 1.6,
+      'la bibliothèque est une colonne étroite et le contenu conserve la zone centrale principale');
+    assert.ok(await p.locator('#b-book-list .op-book-row').count() > 0, 'les livres disponibles sont lisibles dans la bibliothèque');
+    const esther = p.locator('#b-book-list [data-book="Esther"]');
+    if (await esther.count()) {
+      await esther.click();
+      const chapter = p.locator('#b-chapters [data-chapter="8"]');
+      if (await chapter.count()) {
+        await chapter.click();
+        const verse = p.locator('#b-grid [data-v="9"]');
+        await verse.click();
+        assert.equal(await verse.getAttribute('aria-pressed'), 'true', 'le verset choisi reste visuellement sélectionné');
+        assert.ok((await p.locator('#b-reading').innerText()).trim().length > 0, 'le verset est lisible dans le panneau de lecture');
+        assert.notEqual((await (await p.request.get(BASE + '/api/state')).json()).live?.tool, 'bible', 'sélectionner un verset prépare la lecture sans envoyer par surprise');
+        await p.locator('#b-grid [data-show-verse="9"]').click();
+        await p.waitForFunction(async () => (await (await fetch('/api/state')).json()).live?.tool === 'bible');
+      }
+    }
+    await p.locator('#nav .navbtn[data-t="chants"]').click();
+    await p.waitForSelector('.op-songs-workspace .op-song-slide');
+    assert.ok(await p.locator('#ch-list .op-song-row').count() > 0, 'la liste des chants reste à gauche');
+    assert.ok((await p.locator('.op-song-slide-text').first().innerText()).trim().length > 0, 'les paroles sont visibles et lisibles au centre');
+    const section = p.locator('.op-song-slide[data-slide="1"]');
+    if (await section.count()) await section.click();
+    assert.equal((await (await p.request.get(BASE + '/api/state')).json()).live?.tool, 'bible', 'cliquer une section de chant la prépare sans changer la diffusion');
+    await p.locator('#ch-peek-send').click();
+    await p.waitForFunction(async () => (await (await fetch('/api/state')).json()).live?.tool === 'chants');
+    await p.locator('#nav .navbtn[data-t="medias"]').click();
+    await p.waitForSelector('.op-media-workspace #m-player');
+    assert.ok(await p.locator('.op-media-workspace #m-list').count(), 'la médiathèque garde sa colonne de sélection');
+    assert.ok(await p.locator('.op-media-workspace #m-player').count(), 'le lecteur de travail reste présent au centre');
+    assert.ok(await p.locator('#pv-work-plein').count(), 'les aperçus FREESTREAM/OBS n’ont pas été supprimés');
+    await p.setViewportSize({ width: 390, height: 844 });
+    await p.locator('#nav .navbtn[data-t="bible"]').click();
+    await p.waitForSelector('.op-bible-workspace');
+    const mobileLibrary = await p.locator('.op-library-panel').boundingBox();
+    const mobileContent = await p.locator('.op-work-panel').boundingBox();
+    assert.ok(mobileLibrary && mobileContent && mobileContent.y >= mobileLibrary.y + mobileLibrary.height - 2,
+      'sur téléphone, la bibliothèque se replie au-dessus du contenu sans faire disparaître la lecture');
+    assert.deepEqual(errors, [], 'aucune erreur navigateur : ' + errors.join(' | '));
+    await p.close();
+  });
+
   test('⛶ Max et ◧ Aperçus maximisent réellement l’espace de travail', async (ctx) => {
     if (!browser) return ctx.skip('navigateur indisponible : ' + skipReason);
     const p = await browser.newPage({ viewport: { width: 1600, height: 900 } });
@@ -165,13 +218,16 @@ describe('Navigateur réel — régie', () => {
 
   test('les raccourcis Couper respectent le Cœur et le lowerthird indépendant', async (ctx) => {
     if (!browser) return ctx.skip('navigateur indisponible : ' + skipReason);
-    await fetch(BASE+'/api/patch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patch:{live:{
-      tool:'bible',blackout:false,
-      fullscreen:{tool:'bible',key:'quick-cut-test',designId:'bible:plein',vars:{reference:'Jean 3:16',content:'Test'}},
-      lower:null,
-      coeur:{tool:'chants',key:'coeur-safe',designId:'chants:coeur',vars:{title:'Cœur à garder',content:'Chant'}},
-      lowerthird:{id:'lt-safe',title:'Annonce à garder',startedAt:Date.now(),duration:0,cut:false},
-    }}})});
+    await fetch(BASE+'/api/patch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patch:{
+      live:{
+        tool:'bible',blackout:false,
+        fullscreen:{tool:'bible',key:'quick-cut-test',designId:'bible:plein',vars:{reference:'Jean 3:16',content:'Test'}},
+        lower:null,
+        coeur:{tool:'chants',key:'coeur-safe',designId:'chants:coeur',vars:{title:'Cœur à garder',content:'Chant'}},
+        lowerthird:{id:'lt-safe',title:'Annonce à garder',startedAt:Date.now(),duration:0,cut:false},
+      },
+      bible:{book:'Jean',chapter:3,verse:16,toVerse:null,partIndex:0},
+    }})});
     const p=await browser.newPage({viewport:{width:1600,height:900}});
     await p.goto(BASE+'/regie.html',{waitUntil:'domcontentloaded'}); await p.waitForTimeout(1200);
     const relaunch=p.locator('[data-quick-launch="bible"]');

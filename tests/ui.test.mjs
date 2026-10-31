@@ -92,6 +92,7 @@ describe('Montage réel des modules de la régie', () => {
     book.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
     const store = sharedStore;
     assert.equal(store.state.bible.book,'Esther');
+    assert.equal(document.activeElement?.id,'b-chap','Entrée place directement le curseur sur le chapitre');
     // application chapitre/verset
     $('#b-chap').value='8'; $('#b-verse').value='9'; $('#b-go').click();
     assert.equal(store.state.bible.chapter,8); assert.equal(store.state.bible.verse,9);

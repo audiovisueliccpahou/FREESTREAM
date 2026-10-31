@@ -35,8 +35,8 @@ async function reload() {
     songs = [{ ...demo, _file:'chant-demo.json' }];
   }
   const requested = songs.find(s=>s.id===store.state.chants?.currentId);
-  if (requested) sel = requested;
-  else if (!sel || !songs.find(s=>s.id===sel.id)) sel = songs[0] || null;
+  if (requested) { sel = requested; slideIdx = Number(store.state.chants?.chunkIndex) || 0; }
+  else if (!sel || !songs.find(s=>s.id===sel.id)) { sel = songs[0] || null; slideIdx = 0; }
 }
 
 function keyOf(song, idx) { return `${song?.id}|${idx}`; }
@@ -53,26 +53,39 @@ function render() {
 
 function renderListe(box) {
   box.innerHTML = `
-    <div class="card tight" style="margin-bottom:12px">
-      <div class="row"><input class="inp grow" id="ch-q" placeholder="🔍 Tapez quelques mots DU CONTENU d'un chant…" value="${esc(query)}">
-        <button class="btn primary" id="ch-new">+ Nouveau chant</button>
-        <button class="btn" id="ch-import">📥 Importer</button>
-        <button class="btn" id="ch-export-all">📤 Tout exporter</button></div>
-      <div class="hint">La recherche propose les chants dès que vous tapez un fragment de leurs paroles.</div>
-    </div>
-    <div class="grid2" style="grid-template-columns:1fr 1fr">
-      <div class="card tight"><strong>${songs.length} chant(s)</strong><div id="ch-list" class="scroll" style="max-height:56vh;margin-top:10px"></div></div>
-      <div class="card tight"><strong>Aperçu du chant</strong><div id="ch-peek" style="margin-top:10px"></div></div>
+    <div class="op-workspace op-songs-workspace">
+      <aside class="op-library-panel" aria-label="Bibliothèque des chants">
+        <div class="op-panel-heading"><div><strong>Chants</strong><span class="op-panel-count">${songs.length} titres</span></div></div>
+        <div class="op-list-search"><input class="inp" id="ch-q" placeholder="🔍 Rechercher titre ou paroles…" value="${esc(query)}"></div>
+        <div class="op-library-actions"><button class="btn primary" id="ch-new">+ Nouveau chant</button><button class="btn" id="ch-import">📥 Importer</button><button class="btn" id="ch-export-all">📤 Tout exporter</button></div>
+        <div id="ch-list" class="op-list-scroll"></div>
+        <div class="op-library-footer"><span class="muted small">Recherche dans les paroles incluse</span></div>
+      </aside>
+      <section class="op-work-panel op-song-detail"><div id="ch-peek"></div></section>
     </div>`;
   const paint = () => {
-    const found = searchSongs(songs, query);
-    $('#ch-list',box).innerHTML = found.length ? found.map(s=>`<div class="list-item ${sel?.id===s.id?'sel':''}" data-id="${esc(s.id)}">
-        <span class="pill">${(s.sections||[]).length} parties</span>
-        <div class="grow"><div class="t">${esc(s.title)}</div><div class="s">${esc(s.author||s.snippet||'')}</div></div>
-        <button class="btn xs dup" data-id="${esc(s.id)}">⧉</button><button class="btn xs ren" data-id="${esc(s.id)}">✎</button>
-        <button class="btn xs danger del" data-id="${esc(s.id)}">✕</button></div>`).join('') : '<div class="empty">Aucun chant trouvé.</div>';
-    $('#ch-peek',box).innerHTML = sel ? `<div class="pill acc">${esc(sel.title)}</div><pre class="small" style="white-space:pre-wrap;color:var(--txt-2);font-family:var(--f);margin-top:10px;max-height:44vh;overflow:auto">${esc(serializeSong(sel).slice(0,1400))}</pre>
-      <div class="row" style="margin-top:10px"><button class="btn primary" id="ch-open">Ouvrir dans l'éditeur</button><button class="btn blue" id="ch-proj">Projeter</button></div>` : '';
+    const found = searchSongs(songs, query), list=$('#ch-list',box);
+    list.innerHTML = found.length ? found.map(s=>`<div class="op-song-row list-item ${sel?.id===s.id?'selected sel':''}" data-id="${esc(s.id)}">
+        <span class="op-song-count">${(s.sections||[]).length}</span>
+        <div class="op-song-name"><strong>${esc(s.title)}</strong><span>${esc(s.author||s.snippet||'Sans artiste')}</span></div>
+        <div class="op-song-row-actions"><button class="btn xs dup" data-id="${esc(s.id)}" title="Dupliquer">⧉</button><button class="btn xs ren" data-id="${esc(s.id)}" title="Renommer">✎</button><button class="btn xs danger del" data-id="${esc(s.id)}" title="Supprimer">✕</button></div>
+      </div>`).join('') : '<div class="op-empty">Aucun chant trouvé.</div>';
+    const peek=$('#ch-peek',box);
+    if (!sel) { peek.innerHTML='<div class="op-empty op-detail-empty">Sélectionnez un chant dans la bibliothèque.</div>';return; }
+    const slides=allSlides(sel,store.state.chants.linesPerChunk||4);
+    slideIdx=Math.max(0,Math.min(slideIdx,slides.length-1));
+    peek.innerHTML=`
+      <div class="op-work-panel-header op-song-header">
+        <div class="op-active-identity"><span class="op-tool-kicker">CHANT · ${slides.length} ÉCRAN(S)</span><strong>${esc(sel.title)}</strong><span class="muted small">${esc(sel.author||'Artiste non renseigné')} · ${(sel.sections||[]).length} section(s)</span></div>
+        <div class="op-song-actions"><button class="btn" id="ch-open">✎ Éditer</button><button class="btn" id="ch-proj">Projection complète</button><button class="btn primary" id="ch-peek-send">📺 Afficher la sélection</button><button class="btn" id="ch-peek-coeur" title="Envoyer uniquement la sortie Cœur">♥ Cœur seul</button></div>
+      </div>
+      <div class="op-song-reading-heading"><strong>Paroles et sections</strong><span class="muted small">Cliquez sur une partie pour la lire dans l’aperçu · « Afficher » l’envoie à OBS</span></div>
+      <div class="op-song-slides" id="ch-song-slides">${slides.map((slide,i)=>`<article class="op-song-slide ${i===slideIdx?'selected':''}" data-slide="${i}" tabindex="0" role="button" aria-pressed="${i===slideIdx}">
+        <div class="op-song-slide-meta"><span class="op-slide-number">${i+1}</span><span class="op-slide-label">${esc(slide.label||'Partie '+((slide.sectionIndex||0)+1))}</span><span class="op-slide-count">${slide.index+1}/${slide.total}</span></div>
+        <div class="op-song-slide-text">${esc(slide.text)}</div>
+        <button class="btn xs primary op-song-show" data-show-slide="${i}" type="button">Afficher ↗</button>
+      </article>`).join('') || '<div class="op-empty">Ce chant ne contient encore aucune partie. Ouvrez l’éditeur pour en ajouter.</div>'}</div>
+      <div class="op-song-footer"><span class="muted small">Le plein écran et les aperçus gardent le grand format « Chants ».</span><div><button class="btn xs" id="ch-song-prev">◀ Partie</button> <button class="btn xs" id="ch-song-next">Partie ▶</button></div></div>`;
   };
   paint();
   $('#ch-q',box).oninput = e => { query = e.target.value; paint(); };
@@ -90,10 +103,24 @@ function renderListe(box) {
     const d = e.target.closest('[data-id]'); if (!d) return;
     sel = songs.find(x=>x.id===d.dataset.id)||null; slideIdx=0;
     if (sel) store.patch({chants:{currentId:sel.id,chunkIndex:0,sectionIndex:0}});
-    paint();
+    paint(); refreshPreview();
   };
-  const open = $('#ch-open',box); if (open) open.onclick = () => { sub='editeur'; $$('#ch-sub .subtab',host).forEach(x=>x.classList.toggle('on',x.dataset.s==='editeur')); render(); };
-  const proj = $('#ch-proj',box); if (proj) proj.onclick = () => { sub='projection'; $$('#ch-sub .subtab',host).forEach(x=>x.classList.toggle('on',x.dataset.s==='projection')); render(); };
+  $('#ch-peek',box).onclick=e=>{
+    if(e.target.closest('#ch-open')){sub='editeur';$$('#ch-sub .subtab',host).forEach(x=>x.classList.toggle('on',x.dataset.s==='editeur'));render();return;}
+    if(e.target.closest('#ch-proj')){sub='projection';$$('#ch-sub .subtab',host).forEach(x=>x.classList.toggle('on',x.dataset.s==='projection'));render();return;}
+    if(e.target.closest('#ch-peek-send')){send();return;}
+    if(e.target.closest('#ch-peek-coeur')){sendCoeurOnly();return;}
+    if(e.target.closest('#ch-song-prev')){step(-1);paint();return;}
+    if(e.target.closest('#ch-song-next')){step(1);paint();return;}
+    const show=e.target.closest('[data-show-slide]'), card=e.target.closest('[data-slide]');
+    if(!card)return;
+    slideIdx=Number((show||card).dataset.showSlide ?? card.dataset.slide);
+    const slides=allSlides(sel,store.state.chants.linesPerChunk||4), slide=slides[slideIdx];
+    store.patch({chants:{currentId:sel.id,chunkIndex:slideIdx,sectionIndex:slide?.sectionIndex||0}});
+    paint();refreshPreview();
+    if(show)send();
+  };
+  $('#ch-peek',box).onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-slide]')){e.preventDefault();e.target.click();}};
   $('#ch-new',box).onclick = async () => {
     const r = await formDlg('Nouveau chant', [{name:'title',label:'Titre',value:'Nouveau chant'},{name:'text',label:'Paroles (1 retour = ligne · 2 retours = nouvelle partie)',type:'textarea',rows:8,value:''}]);
     if (!r) return;
@@ -108,7 +135,6 @@ function renderListe(box) {
   };
   $('#ch-export-all',box).onclick = () => download('chants-freestream.json', JSON.stringify(songs.map(s=>{const c={...s};delete c._file;return c;}),null,2));
 }
-
 async function persist(s) {
   s.updatedAt = Date.now();
   const name = s._file || `chant-${s.id}.json`;
