@@ -166,9 +166,9 @@ describe('Navigateur réel — régie', () => {
         await verse.click();
         assert.equal(await verse.getAttribute('aria-pressed'), 'true', 'le verset choisi reste visuellement sélectionné');
         assert.ok((await p.locator('#b-reading').innerText()).trim().length > 0, 'le verset est lisible dans le panneau de lecture');
-        assert.notEqual((await (await p.request.get(BASE + '/api/state')).json()).live?.tool, 'bible', 'sélectionner un verset prépare la lecture sans envoyer par surprise');
-        await p.locator('#b-grid [data-show-verse="9"]').click();
         await p.waitForFunction(async () => (await (await fetch('/api/state')).json()).live?.tool === 'bible');
+        const bibleLive=(await (await p.request.get(BASE + '/api/state')).json()).live;
+        assert.ok(bibleLive.fullscreen?.vars?.reference?.includes('Esther 8:9'), 'un clic sur un verset l’envoie immédiatement vers OBS');
       }
     }
     await p.locator('#nav .navbtn[data-t="chants"]').click();
@@ -177,9 +177,9 @@ describe('Navigateur réel — régie', () => {
     assert.ok((await p.locator('.op-song-slide-text').first().innerText()).trim().length > 0, 'les paroles sont visibles et lisibles au centre');
     const section = p.locator('.op-song-slide[data-slide="1"]');
     if (await section.count()) await section.click();
-    assert.equal((await (await p.request.get(BASE + '/api/state')).json()).live?.tool, 'bible', 'cliquer une section de chant la prépare sans changer la diffusion');
-    await p.locator('#ch-peek-send').click();
+    else await p.locator('.op-song-slide').first().click();
     await p.waitForFunction(async () => (await (await fetch('/api/state')).json()).live?.tool === 'chants');
+    assert.equal((await (await p.request.get(BASE + '/api/state')).json()).live?.tool, 'chants', 'un clic sur une section l’envoie immédiatement vers OBS');
     await p.locator('#nav .navbtn[data-t="medias"]').click();
     await p.waitForSelector('.op-media-workspace #m-player');
     assert.ok(await p.locator('.op-media-workspace #m-list').count(), 'la médiathèque garde sa colonne de sélection');

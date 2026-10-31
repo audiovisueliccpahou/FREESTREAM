@@ -118,7 +118,8 @@ function renderListe(box) {
     const slides=allSlides(sel,store.state.chants.linesPerChunk||4), slide=slides[slideIdx];
     store.patch({chants:{currentId:sel.id,chunkIndex:slideIdx,sectionIndex:slide?.sectionIndex||0}});
     paint();refreshPreview();
-    if(show)send();
+    // OpenPresenter-style: one click on a lyric section both selects and displays it.
+    send();
   };
   $('#ch-peek',box).onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-slide]')){e.preventDefault();e.target.click();}};
   $('#ch-new',box).onclick = async () => {

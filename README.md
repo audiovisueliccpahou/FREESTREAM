@@ -12,14 +12,15 @@ et OBS — ce que vous voyez en préparation est exactement ce qui part à l'ant
 
 ---
 
-## Nouveautés — 1.4.0
+## Nouveautés — 1.4.1
 
 Les espaces **Bible, Chants et Médias** reprennent maintenant le parcours de travail OpenPresenter :
 la bibliothèque et sa recherche restent à gauche, le contenu sélectionné — versets lisibles,
 sections de chant ou lecteur du média — occupe la zone centrale, et les sorties OBS FREESTREAM
 restent visibles à droite. La Bible offre une liste de livres, un accès rapide aux chapitres et
-versets, ainsi qu’une lecture claire avant envoi. Choisir un verset ou une partie de chant prépare
-l’aperçu sans changer la diffusion ; le bouton **Afficher** envoie explicitement à OBS.
+versets, ainsi qu’une lecture claire avant envoi. Un clic sur un verset ou une partie de chant l’affiche immédiatement dans les sorties OBS ; le bouton
+**Afficher** reste aussi disponible. Pour les médias, le parcours prévu reste : premier clic pour l’aperçu
+de travail, second clic pour la diffusion.
 
 Les aperçus TRAVAIL / À L’ANTENNE, le découpage Bible, l’éditeur riche, les grands caractères des
 chants, la sélection média en deux clics, le Cœur et les autres fonctions FREESTREAM sont conservés.

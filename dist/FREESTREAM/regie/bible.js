@@ -257,7 +257,8 @@ function paintVerseGrid() {
     const verse=Number((show||card).dataset.showVerse || card.dataset.v);
     store.patch({bible:{verse,toVerse:null,partIndex:0}});$('#b-verse',host).value=String(verse);
     recalc();paintVerseGrid();paintParts();paintText();refreshPreview();
-    if(show) send('both');
+    // OpenPresenter-style: clicking a verse displays it immediately on both OBS outputs.
+    send('both');
   };
   grid.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-v]')){e.preventDefault();e.target.click();}};
   const c=$('#b-count',host);if(c)c.textContent=`${nums.length} versets`;
