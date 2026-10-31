@@ -143,6 +143,47 @@ describe('Navigateur réel — régie', () => {
     await p.close();
   });
 
+  test('navigation persistante et import multiple des Bibles XML OpenPresenter', async (ctx) => {
+    if (!browser) return ctx.skip('navigateur indisponible : ' + skipReason);
+    const p=await browser.newPage({viewport:{width:1600,height:900}}),errors=[];
+    p.on('pageerror',e=>errors.push(e.message));
+    await p.goto(BASE+'/regie.html',{waitUntil:'domcontentloaded'});
+    await p.waitForSelector('.op-bible-workspace');
+    await p.locator('#bib-sub [data-s="versions"]').click();
+    const xml=(translation,status,verse)=>`<?xml version="1.0" encoding="UTF-8"?><bible translation="${translation}" status="${status}" link="https://example.test/licence"><testament name="New"><book number="43"><chapter number="3"><verse number="16">${verse}</verse></chapter></book></testament></bible>`;
+    const files=[
+      {name:'FrenchS21Bible.xml',mimeType:'application/xml',buffer:Buffer.from(xml('French S21 Demo','Permission de test','Verset S21 importé'))},
+      {name:'EnglishKJBible.xml',mimeType:'application/xml',buffer:Buffer.from(xml('English KJV Demo','Public Domain','KJV imported verse'))},
+    ];
+    const chooserReady=p.waitForEvent('filechooser');
+    await p.locator('#v-import').click();
+    const chooser=await chooserReady;
+    assert.equal(chooser.isMultiple(),true,'l’import accepte plusieurs fichiers OpenPresenter en une sélection');
+    await chooser.setFiles(files);
+    await p.waitForFunction(()=>document.querySelectorAll('#v-list .bible-version-row').length>=4);
+    const listText=await p.locator('#v-list').innerText();
+    assert.ok(listText.includes('French S21 Demo')&&listText.includes('English KJV Demo'),'les deux versions importées sont listées');
+    for(const title of ['French S21 Demo','English KJV Demo']) await p.locator('#v-list .bible-version-row').filter({hasText:title}).locator('details summary').click();
+    const licensedText=await p.locator('#v-list').innerText();
+    assert.ok(licensedText.includes('Permission de test')&&licensedText.includes('Public Domain'),'les mentions de licence sont conservées et consultables');
+    await p.locator('#nav .navbtn[data-t="chants"]').click();
+    await p.waitForSelector('.op-songs-workspace');
+    await p.locator('#nav .navbtn[data-t="bible"]').click();
+    await p.waitForFunction(()=>document.querySelector('#nav .navbtn.on')?.dataset.t==='bible'&&document.querySelector('#main>.module-pane.active')?.dataset.modulePane==='bible');
+    assert.ok(await p.locator('#bib-sub [data-s="versions"].on').count(),'l’onglet Bible et son sous-onglet restent montés au retour');
+    await p.locator('#bib-sub [data-s="lecture"]').click();
+    assert.ok((await p.locator('#b-grid .op-verse-text').first().innerText()).includes('Verset S21 importé'),'le verset importé s’affiche en lecture');
+    await p.evaluate(()=>['medias','chants','bible','designs','outputs','chants','bible'].forEach(t=>document.querySelector(`#nav .navbtn[data-t="${t}"]`)?.click()));
+    await p.waitForFunction(()=>document.querySelector('#nav .navbtn.on')?.dataset.t==='bible'&&document.querySelector('#main>.module-pane.active')?.dataset.modulePane==='bible'&&document.querySelector('#b-grid .op-verse-text')?.textContent.includes('Verset S21 importé'));
+    assert.equal(await p.locator('#main>.module-pane.active').count(),1,'un seul panneau de module est actif après plusieurs changements rapides');
+    assert.ok(await p.locator('#pv-work-plein').count()&&await p.locator('#pv-work-bas').count(),'les aperçus OBS restent présents pendant les changements d’onglet');
+    assert.deepEqual(errors,[],'aucune erreur navigateur : '+errors.join(' | '));
+    await p.request.post(BASE+'/api/delete',{data:{folder:'bibles',name:'op-french-s21-demo.json'}});
+    await p.request.post(BASE+'/api/delete',{data:{folder:'bibles',name:'op-english-kjv-demo.json'}});
+    await p.request.post(BASE+'/api/patch',{data:{patch:{bible:{version:'ls1910',versions:['ls1910']}}}});
+    await p.close();
+  });
+
   test('Bible, chants et médias : bibliothèque à gauche, contenu lisible au centre, sorties conservées', async (ctx) => {
     if (!browser) return ctx.skip('navigateur indisponible : ' + skipReason);
     const p = await browser.newPage({ viewport: { width: 1600, height: 900 } });
@@ -150,9 +191,10 @@ describe('Navigateur réel — régie', () => {
     p.on('pageerror', e => errors.push(e.message));
     await p.goto(BASE + '/regie.html', { waitUntil: 'domcontentloaded' });
     await p.waitForSelector('.op-bible-workspace');
-    const workspace = await p.locator('.op-workspace').boundingBox();
-    const library = await p.locator('.op-library-panel').boundingBox();
-    const content = await p.locator('.op-work-panel').boundingBox();
+    const biblePane=p.locator('#main>.module-pane.active[data-module-pane="bible"]');
+    const workspace = await biblePane.locator('.op-workspace').boundingBox();
+    const library = await biblePane.locator('.op-library-panel').boundingBox();
+    const content = await biblePane.locator('.op-work-panel').boundingBox();
     assert.ok(workspace && library && content && content.width > library.width * 1.6,
       'la bibliothèque est une colonne étroite et le contenu conserve la zone centrale principale');
     assert.ok(await p.locator('#b-book-list .op-book-row').count() > 0, 'les livres disponibles sont lisibles dans la bibliothèque');
@@ -173,23 +215,26 @@ describe('Navigateur réel — régie', () => {
     }
     await p.locator('#nav .navbtn[data-t="chants"]').click();
     await p.waitForSelector('.op-songs-workspace .op-song-slide');
-    assert.ok(await p.locator('#ch-list .op-song-row').count() > 0, 'la liste des chants reste à gauche');
-    assert.ok((await p.locator('.op-song-slide-text').first().innerText()).trim().length > 0, 'les paroles sont visibles et lisibles au centre');
-    const section = p.locator('.op-song-slide[data-slide="1"]');
+    const chantsPane=p.locator('#main>.module-pane.active[data-module-pane="chants"]');
+    assert.ok(await chantsPane.locator('#ch-list .op-song-row').count() > 0, 'la liste des chants reste à gauche');
+    assert.ok((await chantsPane.locator('.op-song-slide-text').first().innerText()).trim().length > 0, 'les paroles sont visibles et lisibles au centre');
+    const section = chantsPane.locator('.op-song-slide[data-slide="1"]');
     if (await section.count()) await section.click();
-    else await p.locator('.op-song-slide').first().click();
+    else await chantsPane.locator('.op-song-slide').first().click();
     await p.waitForFunction(async () => (await (await fetch('/api/state')).json()).live?.tool === 'chants');
     assert.equal((await (await p.request.get(BASE + '/api/state')).json()).live?.tool, 'chants', 'un clic sur une section l’envoie immédiatement vers OBS');
     await p.locator('#nav .navbtn[data-t="medias"]').click();
     await p.waitForSelector('.op-media-workspace #m-player');
-    assert.ok(await p.locator('.op-media-workspace #m-list').count(), 'la médiathèque garde sa colonne de sélection');
-    assert.ok(await p.locator('.op-media-workspace #m-player').count(), 'le lecteur de travail reste présent au centre');
+    const mediaPane=p.locator('#main>.module-pane.active[data-module-pane="medias"]');
+    assert.ok(await mediaPane.locator('.op-media-workspace #m-list').count(), 'la médiathèque garde sa colonne de sélection');
+    assert.ok(await mediaPane.locator('.op-media-workspace #m-player').count(), 'le lecteur de travail reste présent au centre');
     assert.ok(await p.locator('#pv-work-plein').count(), 'les aperçus FREESTREAM/OBS n’ont pas été supprimés');
     await p.setViewportSize({ width: 390, height: 844 });
     await p.locator('#nav .navbtn[data-t="bible"]').click();
     await p.waitForSelector('.op-bible-workspace');
-    const mobileLibrary = await p.locator('.op-library-panel').boundingBox();
-    const mobileContent = await p.locator('.op-work-panel').boundingBox();
+    const mobileBiblePane=p.locator('#main>.module-pane.active[data-module-pane="bible"]');
+    const mobileLibrary = await mobileBiblePane.locator('.op-library-panel').boundingBox();
+    const mobileContent = await mobileBiblePane.locator('.op-work-panel').boundingBox();
     assert.ok(mobileLibrary && mobileContent && mobileContent.y >= mobileLibrary.y + mobileLibrary.height - 2,
       'sur téléphone, la bibliothèque se replie au-dessus du contenu sans faire disparaître la lecture');
     assert.deepEqual(errors, [], 'aucune erreur navigateur : ' + errors.join(' | '));
@@ -226,7 +271,7 @@ describe('Navigateur réel — régie', () => {
         coeur:{tool:'chants',key:'coeur-safe',designId:'chants:coeur',vars:{title:'Cœur à garder',content:'Chant'}},
         lowerthird:{id:'lt-safe',title:'Annonce à garder',startedAt:Date.now(),duration:0,cut:false},
       },
-      bible:{book:'Jean',chapter:3,verse:16,toVerse:null,partIndex:0},
+      bible:{version:'ls1910',versions:['ls1910'],book:'Jean',chapter:3,verse:16,toVerse:null,partIndex:0},
     }})});
     const p=await browser.newPage({viewport:{width:1600,height:900}});
     await p.goto(BASE+'/regie.html',{waitUntil:'domcontentloaded'}); await p.waitForTimeout(1200);

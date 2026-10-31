@@ -1,5 +1,5 @@
 // Chargement, import et API des versions bibliques.
-import { getBook, formatRef, verseCountFromDataset } from './bible-utils.js';
+import { BOOKS, getBook, formatRef, verseCountFromDataset } from './bible-utils.js';
 
 const memCache = new Map();
 
@@ -90,25 +90,66 @@ export function importBible(text, filename = '') {
     if (Object.keys(books).length) return normalize({ books }, { name: filename || 'Bible USFM' });
   }
 
-  // 5) OSIS / Zefania / XML
+  // 5) OpenPresenter Bible XML (bible/testament/book number/chapter/verse).
+  // OpenPresenter ships this five-level shape in BIBLES/*.xml. The number
+  // attribute follows the standard 66-book order; translation/license/link
+  // metadata are carried into FREESTREAM instead of being discarded.
   if (/<(osis|XMLBIBLE|bible)/i.test(t)) {
     const books = {};
     const doc = new DOMParser().parseFromString(t, 'application/xml');
+    if (doc.querySelector('parsererror')) throw new Error('XML illisible : vérifiez l’encodage et la syntaxe du fichier.');
+    const root = doc.documentElement;
+    const rootName = String(root?.localName || root?.nodeName || '').toLowerCase();
+    const openBookNodes = [...doc.getElementsByTagName('*')].filter(n =>
+      String(n.localName || n.nodeName).toLowerCase() === 'book' &&
+      String(n.parentElement?.localName || n.parentElement?.nodeName || '').toLowerCase() === 'testament');
+    if (rootName === 'bible' && openBookNodes.length) {
+      const child = (node, name) => [...node.children].filter(x => String(x.localName||x.nodeName).toLowerCase() === name);
+      for (const bn of openBookNodes) {
+        const rawNumber = Number(bn.getAttribute('number') || bn.getAttribute('bnumber'));
+        const named = bn.getAttribute('name') || bn.getAttribute('bname') || '';
+        const book = (rawNumber > 0 && BOOKS[rawNumber-1]?.name) || getBook(named)?.name || named;
+        if (!book) continue;
+        for (const ch of child(bn,'chapter')) {
+          const chapter = ch.getAttribute('number') || ch.getAttribute('cnumber');
+          for (const verse of child(ch,'verse')) {
+            const number = verse.getAttribute('number') || verse.getAttribute('vnumber');
+            const text = [...verse.childNodes].map(n => n.textContent || '').join('').replace(/\s+/g,' ').trim();
+            if (chapter && number && text) push(books,book,chapter,number,text);
+          }
+        }
+      }
+      if (Object.keys(books).length) {
+        const translation=root.getAttribute('translation')||filename||'Bible OpenPresenter';
+        const status=root.getAttribute('status')||'Licence non précisée dans le fichier source';
+        const link=root.getAttribute('link')||'';
+        return normalize({books},{
+          id:`op-${slugId(translation)}`,name:translation,short:openPresenterShort(translation),
+          lang:/\b(english|king james|kjv)\b/i.test(translation)?'en':'fr',license:status,
+          source:'OpenPresenter XML',sourceLink:link,
+        });
+      }
+    }
+
+    // 6) OSIS / Zefania / generic XML.
     const bnodes = [...doc.querySelectorAll('div[type="book"], BIBLEBOOK')];
     for (const bn of bnodes) {
-      const book = bn.getAttribute('osisID') || bn.getAttribute('bname') || bn.getAttribute('bnumber') || '';
-      const name = fromUsfmCode(String(book).split('.')[0]) || book;
-      const verses = bn.querySelectorAll('verse[osisID], VERSE');
+      const rawBook = bn.getAttribute('osisID') || bn.getAttribute('bname') || bn.getAttribute('bnumber') || '';
+      const rawNum = Number(bn.getAttribute('bnumber')||'');
+      const name = (rawNum>0&&BOOKS[rawNum-1]?.name) || fromUsfmCode(String(rawBook).split('.')[0]) || getBook(rawBook)?.name || rawBook;
+      const verses = bn.querySelectorAll('verse[osisID], VERSE, VERS');
       let ch = 1;
       for (const v of verses) {
         const osis = v.getAttribute('osisID') || '';
         const mm = /\.(\d+)\.(\d+)/.exec(osis);
         if (mm) ch = +mm[1];
-        const num = v.getAttribute('vnumber') || (mm ? mm[2] : null) || '1';
-        push(books, name, ch, num, (v.textContent || '').trim());
+        const num = v.getAttribute('vnumber') || v.getAttribute('number') || (mm ? mm[2] : null) || '1';
+        const chapterNode=v.closest('CHAPTER, chapter');
+        ch=Number(chapterNode?.getAttribute('cnumber')||chapterNode?.getAttribute('number')||ch)||ch;
+        push(books, name, ch, num, (v.textContent || '').replace(/\s+/g,' ').trim());
       }
     }
-    if (Object.keys(books).length) return normalize({ books }, { name: filename || 'Bible XML' });
+    if (Object.keys(books).length) return normalize({ books }, { name: filename || root?.getAttribute?.('translation') || 'Bible XML', source:'XML' });
   }
 
   // 6) TXT simple : "Jean 3:16 Car Dieu..." par ligne
@@ -122,6 +163,21 @@ export function importBible(text, filename = '') {
     if (n) return normalize({ books }, { name: filename || 'Bible TXT' });
   }
   throw new Error('Format non reconnu. Formats acceptés : JSON, CSV/TSV, USFM, OSIS/Zefania XML, TXT « Livre c:v texte ».');
+}
+
+
+function slugId(s) {
+  const slug=String(s||'bible').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,42);
+  return slug||'version';
+}
+function openPresenterShort(name) {
+  const s=String(name||'');
+  if(/\bKJV|King James/i.test(s))return 'KJV';
+  if(/\bBDS|Semeur/i.test(s))return 'BDS';
+  if(/PDV.?2017|Parole de Vie/i.test(s))return 'PDV 2017';
+  if(/\bS21|Segond 21/i.test(s))return 'S21';
+  if(/Segond 1910|LSG/i.test(s))return 'LS1910';
+  return s.slice(0,14);
 }
 
 function push(books, book, chapter, verse, text) {

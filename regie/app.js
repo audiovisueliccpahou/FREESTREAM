@@ -12,38 +12,120 @@ import { fmt, remainingMs } from '../core/timer.js';
 import { searchAll } from './quick-search.js';
 
 const MODULES = { bible, chants, medias, lowerthird, designs, outputs, orateur };
-let active = null, activeName = '';
-
 await store.init({ role:'regie', id:'regie-principale' });
 initWorkPreviews();
 
 /* -------------------------------------------------------------- navigation */
 const navBtns = $$('#nav .navbtn');
-async function goto(name) {
-  if (name === 'minuteur') {
-    window.open('regies/minuteur.html', 'fs-minuteur', 'width=1100,height=860');
-    $('#main').innerHTML = minuteurPanel(); bindMinuteurPanel(); return;
+const main = $('#main');
+const paneByName = new Map();
+const instanceByName = new Map();
+const mountByName = new Map();
+let active = null, activeName = '', navigationRequest = 0, navProgress = null;
+const toolTitles = {bible:'📖 Bible',chants:'🎵 Chants',medias:'🎬 Médias',lowerthird:'▭ Lowerthirds',designs:'🎨 Designs',outputs:'🔌 Sorties',orateur:'✉ Orateur',minuteur:'⏱ Minuteur',aide:'❔ Aide'};
+
+function getPane(name) {
+  let pane=paneByName.get(name);
+  if(!pane){
+    pane=document.createElement('section');
+    pane.className='module-pane';
+    pane.dataset.modulePane=name;
+    pane.setAttribute('aria-hidden','true');
+    pane.inert=true;
+    main.appendChild(pane);
+    paneByName.set(name,pane);
   }
-  if (name === 'aide') { $('#main').innerHTML = aidePanel(); active = null; activeName = 'aide'; updateNav(); return; }
-  const mod = MODULES[name]; if (!mod) return;
-  active?.destroy?.();
-  $('#main').innerHTML = '';
-  try { active = await mod.mount($('#main')); }
-  catch (e) { console.error(e); $('#main').innerHTML = `<div class="empty">Erreur du module « ${esc(name)} » : ${esc(e.message)}</div>`; active = null; }
-  activeName = name; updateNav();
-  const ct = $('#cur-tool'); if (ct) ct.textContent = ({bible:'📖 Bible',chants:'🎵 Chants',medias:'🎬 Médias',lowerthird:'▭ Lowerthirds',designs:'🎨 Designs',outputs:'🔌 Sorties',orateur:'✉ Orateur'})[name] || name;
+  return pane;
+}
+function setNavProgress(name, visible) {
+  if(!navProgress){
+    navProgress=document.createElement('div');navProgress.className='module-nav-progress';navProgress.setAttribute('role','status');
+    main.appendChild(navProgress);
+  }
+  navProgress.textContent=`Ouverture de ${toolTitles[name]||name}…`;
+  navProgress.hidden=!visible;
+}
+function activatePane(name, pane) {
+  for(const [key,item] of paneByName){
+    const on=key===name;
+    item.classList.toggle('active',on);
+    item.setAttribute('aria-hidden',String(!on));
+    item.inert=!on;
+  }
+  activeName=name;
+  active=instanceByName.get(name)||null;
+  updateNav();
+  const ct=$('#cur-tool');if(ct)ct.textContent=toolTitles[name]||name;
+  setNavProgress(name,false);
+}
+async function mountPane(name, mod) {
+  if(instanceByName.has(name))return instanceByName.get(name);
+  if(mountByName.has(name))return mountByName.get(name);
+  const pane=getPane(name);
+  pane.innerHTML=`<div class="module-loading"><span class="module-spinner" aria-hidden="true"></span><strong>Chargement de ${esc(toolTitles[name]||name)}…</strong><span>Votre régie et vos aperçus restent actifs.</span></div>`;
+  const task=(async()=>{
+    try{
+      const instance=await mod.mount(pane);
+      instanceByName.set(name,instance||{});
+      return instance||{};
+    }catch(error){
+      console.error(error);
+      pane.innerHTML=`<div class="module-error" role="alert"><strong>Impossible d’ouvrir ${esc(toolTitles[name]||name)}.</strong><p>${esc(error?.message||error)}</p><button class="btn" type="button" data-retry-module="${esc(name)}">Réessayer</button></div>`;
+      pane.querySelector('[data-retry-module]')?.addEventListener('click',()=>{instanceByName.delete(name);mountByName.delete(name);goto(name);});
+      instanceByName.set(name,{});
+      return {};
+    }finally{mountByName.delete(name);}
+  })();
+  mountByName.set(name,task);
+  return task;
+}
+
+async function goto(name, {refresh=false}={}) {
+  const request=++navigationRequest;
+  if(!MODULES[name]&&name!=='minuteur'&&name!=='aide')return null;
+  if(activeName===name&&instanceByName.has(name)){
+    active=instanceByName.get(name)||null;
+    if(name==='minuteur')window.open('regies/minuteur.html','fs-minuteur','width=1100,height=860');
+    if(refresh&&active?.onKey){const r=active.onKey('refresh');if(r?.then)await r;}
+    return request===navigationRequest?active:null;
+  }
+  if(paneByName.has(name)){
+    if(MODULES[name]&&!instanceByName.has(name)){
+      const pending=mountByName.get(name);
+      if(pending)await pending;else await mountPane(name,MODULES[name]);
+      if(request!==navigationRequest)return null;
+    }
+    activatePane(name,paneByName.get(name));
+    if(name==='minuteur')window.open('regies/minuteur.html','fs-minuteur','width=1100,height=860');
+    if(refresh&&active?.onKey){const r=active.onKey('refresh');if(r?.then)await r;}
+    return request===navigationRequest?active:null;
+  }
+  setNavProgress(name,true);
+  const pane=getPane(name);
+  if(name==='aide'){
+    pane.innerHTML=aidePanel();instanceByName.set(name,{});
+  }else if(name==='minuteur'){
+    pane.innerHTML=minuteurPanel();bindMinuteurPanel();instanceByName.set(name,{});
+  }else{
+    await mountPane(name,MODULES[name]);
+  }
+  if(request!==navigationRequest)return null;
+  activatePane(name,pane);
+  if(name==='minuteur')window.open('regies/minuteur.html','fs-minuteur','width=1100,height=860');
+  if(refresh&&active?.onKey){const r=active.onKey('refresh');if(r?.then)await r;}
+  return active;
 }
 function updateNav(){ navBtns.forEach(b => b.classList.toggle('on', b.dataset.t === activeName)); }
-$('#nav').onclick = e => { const b = e.target.closest('[data-t]'); if (b) goto(b.dataset.t); };
-window.addEventListener('fs:goto', e => goto(e.detail));
+$('#nav').onclick = e => { const b = e.target.closest('[data-t]'); if (b) void goto(b.dataset.t); };
+window.addEventListener('fs:goto', e => { void goto(e.detail); });
 
 /* ---------------------------------------------- raccourcis studio OpenPresenter */
 const toolNames = { bible:'Bible', chants:'Chants', medias:'Médias', lowerthird:'Lowerthird' };
 async function launchTool(tool) {
   const names = { bible:'Bible', chants:'Chants', medias:'Médias', lowerthird:'Lowerthird' };
-  await goto(tool);
+  const instance=await goto(tool);
   const action = tool === 'lowerthird' ? 'confirm' : 'sendFullscreen';
-  if (!active?.onKey) return toast(`Impossible de relancer ${names[tool]} — ouvrez l’outil et vérifiez son contenu.`,'err');
+  if (!instance?.onKey || activeName!==tool) return toast(`Impossible de relancer ${names[tool]} — ouvrez l’outil et vérifiez son contenu.`,'err');
   const before = store.state.rev;
   const result = active.onKey(action);
   if (result && typeof result.then === 'function') await result;
@@ -107,19 +189,19 @@ function drawSearch() {
   searchBox.classList.add('open');
   searchInput?.setAttribute('aria-expanded','true');
 }
-function chooseSearch(item) {
+async function chooseSearch(item) {
   hideSearch(); searchInput.value = '';
   if (item.type === 'bible' || item.type === 'bible-book') {
     store.patch({ bible:{ ...item.action, toVerse:item.action.toVerse || null, partIndex:0 } });
-    goto('bible');
+    await goto('bible',{refresh:true});
     toast(`${item.title} chargé dans la Bible — prêt à vérifier / envoyer`,'ok');
   } else if (item.type === 'song') {
     store.patch({ chants:{ currentId:item.action.id, chunkIndex:0, sectionIndex:0 } });
-    goto('chants');
+    await goto('chants',{refresh:true});
     toast(`${item.title} chargé dans la bibliothèque — aperçu prêt`,'ok');
   } else if (item.type === 'media') {
     store.patch({ medias:{ previewId:item.action.id } });
-    goto('medias');
+    await goto('medias',{refresh:true});
     toast(`${item.title} chargé en aperçu — cliquez encore pour envoyer à OBS`,'ok');
   }
 }

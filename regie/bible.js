@@ -353,6 +353,7 @@ async function step(delta) {
   if (store.state.live?.tool === 'bible') send('both');   // les deux avancent ensemble
 }
 function onKey(action) {
+  if (action === 'refresh') { recalc(); render(); return; }
   if (action === 'next') return step(1);
   if (action === 'prev') return step(-1);
   if (action === 'confirm') return applyInputs();
@@ -431,17 +432,18 @@ function renderVersions(box) {
   box.innerHTML = `
     <div class="card tight">
       <div class="row" style="justify-content:space-between;margin-bottom:10px"><strong>Versions installées</strong>
-        <div class="row"><button class="btn" id="v-import">📥 Importer (JSON, USFM, OSIS, CSV, TXT, XML)</button>
+        <div class="row"><button class="btn primary" id="v-import">📥 Importer des versions (dont OpenPresenter)</button>
         <button class="btn" id="v-online">🌐 Récupérer le verset en ligne</button></div></div>
       <div id="v-list"></div>
-      <div class="hint">Le changement de version conserve la référence courante. Les versions s'affichent empilées, jusqu'à trois.</div>
+      <div class="hint">Importez plusieurs fichiers en une fois : JSON, USFM, OSIS, CSV, TXT et XML. Les fichiers XML de la bibliothèque <code>BIBLES</code> d’OpenPresenter sont reconnus ; sélectionnez directement leurs fichiers dans le dossier OpenPresenter. La référence du verset est conservée. Jusqu’à trois versions peuvent être affichées ensemble.</div>
     </div>
     <div class="card tight" style="margin-top:12px">
       <strong>Version active</strong>
       <div class="row" style="margin-top:10px" id="v-active"></div>
     </div>`;
   const list = $('#v-list',box);
-  list.innerHTML = versions.length ? versions.map(v=>`<div class="list-item"><span class="pill acc">${esc(v.short||v.lang)}</span><div class="grow"><div class="t">${esc(v.name)}</div><div class="s">${Object.keys(v.dataset?.books||{}).length} livres · ${esc(v.file)} · ${esc(v.dataset?._meta?.license||'')}</div></div>
+  list.innerHTML = versions.length ? versions.map(v=>`<div class="list-item bible-version-row"><span class="pill acc">${esc(v.short||v.lang)}</span><div class="grow"><div class="t">${esc(v.name)}</div><div class="s">${Object.keys(v.dataset?.books||{}).length} livres · ${esc(v.file)}${v.dataset?._meta?.source?' · '+esc(v.dataset._meta.source):''}</div>
+        <details class="bible-license"><summary>Licence / provenance</summary><div>${esc(v.dataset?._meta?.license||'Licence non précisée')}${v.dataset?._meta?.sourceLink?` · ${esc(v.dataset._meta.sourceLink)}`:''}</div></details></div>
       <button class="btn xs" data-use="${esc(v.id)}">Activer</button><button class="btn xs danger" data-del="${esc(v.id)}">✕</button></div>`).join('') : '<div class="empty">Aucune Bible. Importez un fichier pour commencer.</div>';
   list.onclick = async e => {
     const u = e.target.closest('[data-use]'); if (u) { store.patch({ bible:{ version:u.dataset.use } }); toast('Version activée — référence conservée','ok'); renderVersions(box); return; }
@@ -456,16 +458,34 @@ function renderVersions(box) {
   $('#v-active',box).innerHTML = versions.map(v=>`<button class="btn ${B().version===v.id?'on':''}" data-a="${esc(v.id)}">${esc(v.name)}</button>`).join('') || '<span class="muted">—</span>';
   $('#v-active',box).onclick = e => { const b=e.target.closest('[data-a]'); if(b){ store.patch({bible:{version:b.dataset.a}}); renderVersions(box); toast('Version changée','ok'); } };
   $('#v-import',box).onclick = async () => {
-    const f = await pickFile('.json,.txt,.csv,.tsv,.xml,.usfm,.sfm,.osis,.zef'); if (!f) return;
-    try {
-      const ds = importBible(await f.text(), f.name);
-      const name = ds._meta.id + '.json';
-      await store.save('bibles', name, ds);
-      versions = await listVersions(store);
-      store.patch({ bible:{ version:ds._meta.id, versions:[ds._meta.id] } });
-      toast(`« ${ds._meta.name} » importée : ${Object.keys(ds.books).length} livres`,'ok');
-      renderVersions(box); recalc();
-    } catch (err) { toast('Import impossible : '+err.message,'err'); }
+    const files = await pickFile('.json,.txt,.csv,.tsv,.xml,.usfm,.sfm,.osis,.zef',true);
+    if (!files?.length) return;
+    const imported=[], failures=[];
+    const importButton=$('#v-import',box), importLabel=importButton?.textContent;
+    if(importButton)importButton.disabled=true;
+    for (const [index,file] of files.entries()) {
+      if(importButton)importButton.textContent=`Importation ${index+1}/${files.length} · ${String(file.name).slice(0,24)}`;
+      try {
+        const ds=importBible(await file.text(),file.name);
+        if(!Object.keys(ds.books||{}).length)throw new Error('aucun livre/verset reconnu');
+        const safeId=String(ds._meta.id||'').replace(/[^a-zA-Z0-9_-]/g,'-').replace(/-+/g,'-').slice(0,64)||`bible-${Date.now().toString(36)}`;
+        ds._meta.id=safeId;
+        const target=`${safeId}.json`;
+        await store.save('bibles',target,ds);
+        imported.push(ds);
+      } catch(err) { failures.push(`${file.name} : ${err.message}`); }
+    }
+    if(importButton){importButton.disabled=false;importButton.textContent=importLabel;}
+    versions=await listVersions(store);
+    if(imported.length){
+      const chosen=imported.slice(0,3).map(d=>d._meta.id);
+      store.patch({bible:{version:chosen[0],versions:chosen}});
+      recalc();
+      const totalBooks=imported.reduce((sum,d)=>sum+Object.keys(d.books||{}).length,0);
+      toast(`${imported.length} version(s) importée(s) · ${totalBooks} livres détectés · ${chosen.length} affichée(s)`, 'ok');
+    }
+    if(failures.length)toast(`Import(s) refusé(s) : ${failures.join(' · ')}`,'err');
+    renderVersions(box);
   };
   $('#v-online',box).onclick = async () => {
     const b = B();

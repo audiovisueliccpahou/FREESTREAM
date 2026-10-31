@@ -81,6 +81,16 @@ describe('Bible — données et import multi-formats', () => {
     const d = importBible(JSON.stringify({ 'Jean 3:16':'Texte libre' }),'b.json');
     assert.equal(getVerse(d,'Jean',3,16),'Texte libre');
   });
+  test('import XML OpenPresenter : numéros de livres, référence, traduction et licence conservées', () => {
+    const xml=`<?xml version="1.0"?><bible translation="French S21 2007 (Bible Segond 21)" status="Reproduit avec autorisation" link="https://example.test/licence"><testament name="New"><book number="43"><chapter number="3"><verse number="16">Texte démo du verset</verse></chapter></book><book number="19"><chapter number="23"><verse number="1">Texte du psaume</verse></chapter></book></testament></bible>`;
+    const d=importBible(xml,'FrenchS21Bible.xml');
+    assert.equal(getVerse(d,'Jean',3,16),'Texte démo du verset');
+    assert.equal(getVerse(d,'Psaumes',23,1),'Texte du psaume');
+    assert.equal(d._meta.short,'S21');
+    assert.equal(d._meta.source,'OpenPresenter XML');
+    assert.equal(d._meta.license,'Reproduit avec autorisation');
+    assert.equal(d._meta.sourceLink,'https://example.test/licence');
+  });
 });
 
 /* ------------------------------------------------- Découpage des versets longs */

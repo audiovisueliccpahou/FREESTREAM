@@ -231,7 +231,9 @@ function send(which='plein', quiet=false) {
   store.patch({ medias:{ activeId:sel.id, previewId:sel.id, slide:m.slide||1, slideCount:m.slideCount||1 } });
   if (!quiet) paintList();
 }
-function onKey(a){ if(a==='next') return items.length ? (()=>{const i=items.findIndex(x=>x.id===sel?.id); sel=items[(i+1)%items.length]; previewId=sel.id; paintList(); paintPlayer(); send('plein');})() : null;
+async function onKey(a){
+  if(a==='refresh'){await reload();paintList();if(sel)paintPlayer();else paintCtrl();return;}
+  if(a==='next') return items.length ? (()=>{const i=items.findIndex(x=>x.id===sel?.id); sel=items[(i+1)%items.length]; previewId=sel.id; paintList(); paintPlayer(); send('plein');})() : null;
   if(a==='prev') { const i=items.findIndex(x=>x.id===sel?.id); sel=items[(i-1+items.length)%items.length]; previewId=sel.id; paintList(); paintPlayer(); send('plein'); }
   if(a==='sendFullscreen') send('plein'); if(a==='sendLower') send('bas'); }
 export { onKey };

@@ -306,7 +306,12 @@ function sendCoeurOnly() {
   store.patch({ live: { coeur: { tool:'chants', key:`${sel.id}|${slideIdx}:c`, designId:'chants:coeur', vars: coeurVars() } } });
   toast('♥ Cœur envoyé — plein écran et bas centré inchangés','ok');
 }
-function onKey(a){ if(!sel) return; if(a==='next'||a==='prev') return step(a==='next'?1:-1); if(a==='sendFullscreen'||a==='sendLower') return send(); }
+async function onKey(a){
+  if(a==='refresh'){await reload();slideIdx=Number(store.state.chants?.chunkIndex)||0;render();return;}
+  if(!sel)return;
+  if(a==='next'||a==='prev')return step(a==='next'?1:-1);
+  if(a==='sendFullscreen'||a==='sendLower')return send();
+}
 
 /* --------------------------------------------------- fond & calques rapides */
 function renderFond(box) {

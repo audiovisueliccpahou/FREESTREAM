@@ -54,8 +54,11 @@ export function download(name, text, type = 'application/json') {
 export function pickFile(accept = '*/*', multiple = false) {
   return new Promise(res => {
     const i = el(`<input type="file" accept="${accept}" ${multiple?'multiple':''} hidden>`);
+    let settled=false;
+    const finish=value=>{if(settled)return;settled=true;i.remove();res(value);};
+    i.addEventListener('change',()=>finish(multiple?[...i.files]:i.files[0]||null),{once:true});
+    i.addEventListener('cancel',()=>finish(multiple?[]:null),{once:true});
     document.body.appendChild(i); i.click();
-    i.onchange = () => { res(multiple ? [...i.files] : i.files[0] || null); i.remove(); };
   });
 }
 
