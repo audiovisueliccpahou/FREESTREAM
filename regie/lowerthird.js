@@ -32,7 +32,9 @@ async function reload() {
     demo.titleHtml = 'Bienvenue à l\'église'; demo.subtitleHtml = 'Culte du dimanche · 10h00';
     await persist(demo); list = [{ ...demo, _file:`lt-${demo.id}.json` }];
   }
-  if (!sel || !list.find(x=>x.id===sel.id)) sel = list[0];
+  const requested = list.find(x=>x.id===store.state.lowerthird?.currentId);
+  if (requested) sel = requested;
+  else if (!sel || !list.find(x=>x.id===sel.id)) sel = list[0];
 }
 function blank(name) { return { id:uidLT(), name:name||'Nouveau lowerthird', titleHtml:'', subtitleHtml:'', duration:8,
   transition:'slide-left', outTransition:'fade', transitionDuration:420, outDuration:320, target:'bas',
@@ -72,7 +74,7 @@ function renderListe(box) {
   paint();
   $('#lt-q',box).oninput = e => paint(e.target.value);
   $('#lt-new',box).onclick = async () => { const r=await formDlg('Nouveau lowerthird',[{name:'name',label:'Nom',value:'Nouveau lowerthird'}]); if(!r?.name) return;
-    const lt=blank(r.name); await persist(lt); await reload(); sel=list.find(x=>x.id===lt.id)||list[0]; sub='editeur'; render(); };
+    const lt=blank(r.name); await persist(lt); await reload(); sel=list.find(x=>x.id===lt.id)||list[0]; if(sel) store.patch({lowerthird:{currentId:sel.id}}); sub='editeur'; render(); };
   $('#lt-export',box).onclick = () => download('lowerthirds-freestream.json',JSON.stringify(list.map(x=>{const c={...x};delete c._file;return c;}),null,2));
   $('#lt-import',box).onclick = async () => { const f=await pickFile('.json'); if(!f) return;
     try { const d=JSON.parse(await f.text()); const arr=Array.isArray(d)?d:[d]; for(const x of arr){ await persist({...blank(x.name||'Importé'),...x,id:uidLT()}); } await reload(); render(); toast(`${arr.length} importé(s)`,'ok'); } catch(e){ toast('Import impossible : '+e.message,'err'); } };
@@ -81,7 +83,7 @@ function renderListe(box) {
     if(del){ const x=list.find(y=>y.id===del.dataset.id); if(!await confirmDlg(`Supprimer « ${x.name} » ?`)) return; await store.remove('lowerthirds',x._file); await reload(); render(); return; }
     if(ren){ const x=list.find(y=>y.id===ren.dataset.id); const r=await formDlg('Renommer',[{name:'name',label:'Nom',value:x.name}]); if(!r?.name)return; x.name=r.name; await persist(x); await reload(); render(); return; }
     if(dup){ const x=list.find(y=>y.id===dup.dataset.id); const n={...structuredClone(x),id:uidLT(),name:x.name+' (copie)',createdAt:Date.now()}; delete n._file; await persist(n); await reload(); render(); toast('Dupliqué','ok'); return; }
-    const d=e.target.closest('[data-id]'); if(d){ sel=list.find(x=>x.id===d.dataset.id); paint($('#lt-q',box).value); }
+    const d=e.target.closest('[data-id]'); if(d){ sel=list.find(x=>x.id===d.dataset.id); if(sel) store.patch({lowerthird:{currentId:sel.id}}); paint($('#lt-q',box).value); }
   };
   const o=$('#lt-open',box); if(o)o.onclick=()=>{sub='editeur';$$('#lt-sub .subtab',host).forEach(x=>x.classList.toggle('on',x.dataset.s==='editeur'));render();};
   const s=$('#lt-send',box); if(s)s.onclick=()=>sendLT();
@@ -171,7 +173,7 @@ function renderDiffusion(box){
     </div>`;
   $('#x-list',box).innerHTML = list.map(x=>`<div class="lt-row" data-id="${esc(x.id)}"><span class="pill">${x.duration||0}s</span><span class="nm">${esc(x.name)}</span>
       <span class="muted small">${esc(toPlainText(x.titleHtml).slice(0,26))}</span><button class="btn xs primary go" data-id="${esc(x.id)}">Afficher</button></div>`).join('');
-  $('#x-list',box).onclick = e => { const d=e.target.closest('[data-id]'); if(!d)return; sel=list.find(x=>x.id===d.dataset.id); sendLT(); renderDiffusion(box); };
+  $('#x-list',box).onclick = e => { const d=e.target.closest('[data-id]'); if(!d)return; sel=list.find(x=>x.id===d.dataset.id); if(sel) store.patch({lowerthird:{currentId:sel.id}}); sendLT(); renderDiffusion(box); };
   $('#x-cur',box).innerHTML = active ? `${lt.vars?.title||''}<div class="muted" style="font-size:15px;margin-top:8px">${lt.vars?.subtitle||''}</div>` : '<span class="muted">Rien à l\'antenne.</span>';
   $('#x-send',box).onclick = async ()=>{ await save(); sendLT(); renderDiffusion(box); };
   $('#x-cut',box).onclick = ()=>{ cutLowerThird(); renderDiffusion(box); toast('Lowerthird coupé'); };
@@ -184,6 +186,7 @@ function refreshPreview(){
 }
 function sendLT(){
   if(!sel) return;
+  if (store.state.lowerthird?.currentId !== sel.id) store.patch({lowerthird:{currentId:sel.id}});
   const vars = { title:sel.titleHtml||'', subtitle:sel.subtitleHtml||'' };
   sendLowerThird({ id:sel.id, designId: sel.target==='plein'?'lowerthird:plein':'lowerthird:bas', vars,
     duration:Number(sel.duration)||0, transition:sel.transition||'slide-left', outTransition:sel.outTransition||'fade',

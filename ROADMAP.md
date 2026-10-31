@@ -135,8 +135,9 @@ clic droit, loupe 1:1 sur les aperçus.
 
 ### ✅ v1.3 — interface Studio unifié inspirée d'OpenPresenter
 
-Reprise du langage d'interface et des actions du Studio Unifié d'OpenPresenter :
-rail d'outils, état direct par outil, recherche unifiée et commandes rapides.
+Reprise de l'organisation et du flux du Studio Unifié d'OpenPresenter :
+rail d'outils, état direct par outil, recherche unifiée et groupes de commandes
+« Relancer / Couper ». Relancer réouvre l'outil et rediffuse le contenu préparé.
 Adaptation à FREESTREAM : native, 8K, trois moniteurs (plein / bas / Cœur),
 preview séparée du direct, outils non reconstruits en iframes.
 

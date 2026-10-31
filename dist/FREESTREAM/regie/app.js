@@ -39,9 +39,21 @@ window.addEventListener('fs:goto', e => goto(e.detail));
 
 /* ---------------------------------------------- raccourcis studio OpenPresenter */
 const toolNames = { bible:'Bible', chants:'Chants', medias:'Médias', lowerthird:'Lowerthird' };
-document.querySelector('.top-tools')?.addEventListener('click', e => {
+async function launchTool(tool) {
+  const names = { bible:'Bible', chants:'Chants', medias:'Médias', lowerthird:'Lowerthird' };
+  await goto(tool);
+  const action = tool === 'lowerthird' ? 'confirm' : 'sendFullscreen';
+  if (!active?.onKey) return toast(`Impossible de relancer ${names[tool]} — ouvrez l’outil et vérifiez son contenu.`,'err');
+  const before = store.state.rev;
+  const result = active.onKey(action);
+  if (result && typeof result.then === 'function') await result;
+  if (store.state.rev === before) toast(`Rien à relancer pour ${names[tool]} — préparez un contenu dans l’outil.`);
+}
+document.querySelector('.top-tools')?.addEventListener('click', async e => {
   const open = e.target.closest('[data-quick-open]');
+  const launch = e.target.closest('[data-quick-launch]');
   const cut = e.target.closest('[data-quick-cut]');
+  if (launch) { await launchTool(launch.dataset.quickLaunch); return; }
   if (open) { goto(open.dataset.quickOpen); return; }
   if (!cut) return;
   const tool = cut.dataset.quickCut;

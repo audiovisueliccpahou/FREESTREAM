@@ -298,6 +298,7 @@ export function defaultState() {
       playing: true, time: 0, muted: false, volume: 1, loop: false,
       slide: 0, slideCount: 0,
     },
+    lowerthird: { currentId: null },
     orateur: {
       message: null,              // { html, from }
       startedAt: 0,

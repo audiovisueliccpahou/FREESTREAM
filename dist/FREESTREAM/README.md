@@ -216,7 +216,7 @@ régression sur le rendu ni OBS.
 
 - **Barre supérieure** : état du serveur / antenne, outil courant, `Ctrl+K` ou `/`
   pour chercher Bible, chants et médias dans une seule zone ; boutons de
-  raccourci « Ouvrir » et « Couper » par outil.
+  raccourci « Relancer » et « Couper » par outil.
 - **Recherche de référence** : `Jean 3:16` charge le verset dans l'éditeur. La
   recherche textuelle parcourt la version biblique locale sélectionnée et les
   paroles locales ; les accents sont neutralisés pour faciliter la saisie.
@@ -225,6 +225,9 @@ régression sur le rendu ni OBS.
   un chant met à jour l'aperçu de travail ; un média conserve son contrat
   « premier clic = aperçu, deuxième clic = OBS ». C'est plus sûr que d'imposer
   un affichage direct depuis la recherche.
+- **Commandes comme dans OpenPresenter** : chaque groupe propose « ▶ Relancer »
+  (ramène l'outil et rediffuse le contenu préparé) et « ■ Couper ». La sélection
+  de Lowerthird est mémorisée pour qu'on puisse aussi la relancer après coupure.
 - **États visibles** : chaque outil s'allume lorsqu'il est à l'antenne ; « Couper »
   est désactivé quand rien de cet outil n'est diffusé. Couper Bible/Média ne
   retire jamais le Cœur ni le calque Lowerthird indépendant.
