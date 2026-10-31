@@ -9,6 +9,7 @@ import * as designs from './designs.js';
 import * as outputs from './outputs.js';
 import * as orateur from './orateur.js';
 import { fmt, remainingMs } from '../core/timer.js';
+import { searchAll } from './quick-search.js';
 
 const MODULES = { bible, chants, medias, lowerthird, designs, outputs, orateur };
 let active = null, activeName = '';
@@ -35,6 +36,103 @@ async function goto(name) {
 function updateNav(){ navBtns.forEach(b => b.classList.toggle('on', b.dataset.t === activeName)); }
 $('#nav').onclick = e => { const b = e.target.closest('[data-t]'); if (b) goto(b.dataset.t); };
 window.addEventListener('fs:goto', e => goto(e.detail));
+
+/* ---------------------------------------------- raccourcis studio OpenPresenter */
+const toolNames = { bible:'Bible', chants:'Chants', medias:'Médias', lowerthird:'Lowerthird' };
+document.querySelector('.top-tools')?.addEventListener('click', e => {
+  const open = e.target.closest('[data-quick-open]');
+  const cut = e.target.closest('[data-quick-cut]');
+  if (open) { goto(open.dataset.quickOpen); return; }
+  if (!cut) return;
+  const tool = cut.dataset.quickCut;
+  if (tool === 'lowerthird') {
+    const lt = store.state.live?.lowerthird;
+    if (!lt || lt.cut || (lt.duration && Date.now() - (lt.startedAt || 0) >= lt.duration * 1000)) return toast('Aucun lowerthird actif à couper');
+    store.patch({ live:{ lowerthird:{ ...lt, cut:true } } });
+    toast('Lowerthird coupé','ok');
+    return;
+  }
+  const live = store.state.live || {};
+  const patch = { live:{} };
+  let changed = false;
+  for (const key of ['fullscreen','lower']) {
+    if (live[key]?.tool === tool) { patch.live[key] = null; changed = true; }
+  }
+  // La sortie Cœur est indépendante des autres outils et reste en place,
+  // sauf quand l'opérateur coupe explicitement le bus Chants.
+  if (tool === 'chants' && live.coeur?.tool === 'chants') { patch.live.coeur = null; changed = true; }
+  if (!changed) return toast(`${toolNames[tool]} n’est pas à l’antenne`);
+  if (live.tool === tool) patch.live.tool = null;
+  store.patch(patch);
+  toast(`${toolNames[tool]} coupé`,'ok');
+});
+
+/* ------------------------------------------------ recherche globale du studio
+ * Recherche Bible + chants + médias dans une seule barre. Comme OpenPresenter,
+ * Entrée ouvre le résultat ; contrairement au direct, rien n'est diffusé sans
+ * action explicite. Le chant met à jour l'aperçu, le média garde son 1er clic
+ * d'aperçu / 2e clic OBS, la Bible charge la référence dans l'éditeur.
+ */
+const searchInput = $('#global-search'), searchBox = $('#global-search-results');
+let searchItems = [], searchSelected = 0, searchTimer = null, searchSeq = 0;
+const searchLabels = { bible:'BIBLE', 'bible-book':'LIVRE BIBLIQUE', song:'CHANTS', media:'MÉDIAS' };
+function hideSearch() { searchBox?.classList.remove('open'); searchInput?.setAttribute('aria-expanded','false'); }
+function drawSearch() {
+  if (!searchBox) return;
+  if (!searchItems.length) {
+    searchBox.innerHTML = '<div class="search-empty">Aucun résultat. Essayez une référence (Jean 3:16), des paroles, le titre d’un chant ou un nom de fichier.</div>';
+  } else {
+    let last = '';
+    searchBox.innerHTML = searchItems.map((item,i) => {
+      const group = searchLabels[item.type] || 'RÉSULTAT';
+      const heading = group !== last ? `<div class="search-group">${group}</div>` : '';
+      last = group;
+      return `${heading}<button class="search-item" type="button" role="option" aria-selected="${i===searchSelected}" data-search-index="${i}">
+        <span class="search-item-icon">${esc(item.icon)}</span><span class="search-item-copy"><strong>${esc(item.title)}</strong><small>${esc(item.detail)}</small></span>
+        <span class="search-result-tool">↵</span></button>`;
+    }).join('');
+  }
+  searchBox.classList.add('open');
+  searchInput?.setAttribute('aria-expanded','true');
+}
+function chooseSearch(item) {
+  hideSearch(); searchInput.value = '';
+  if (item.type === 'bible' || item.type === 'bible-book') {
+    store.patch({ bible:{ ...item.action, toVerse:item.action.toVerse || null, partIndex:0 } });
+    goto('bible');
+    toast(`${item.title} chargé dans la Bible — prêt à vérifier / envoyer`,'ok');
+  } else if (item.type === 'song') {
+    store.patch({ chants:{ currentId:item.action.id, chunkIndex:0, sectionIndex:0 } });
+    goto('chants');
+    toast(`${item.title} chargé dans la bibliothèque — aperçu prêt`,'ok');
+  } else if (item.type === 'media') {
+    store.patch({ medias:{ previewId:item.action.id } });
+    goto('medias');
+    toast(`${item.title} chargé en aperçu — cliquez encore pour envoyer à OBS`,'ok');
+  }
+}
+async function refreshSearch() {
+  const query = searchInput?.value.trim() || '';
+  const seq = ++searchSeq; searchSelected = 0;
+  if (query.length < 2) { searchItems=[]; hideSearch(); return; }
+  searchBox.innerHTML = '<div class="search-empty">Recherche dans Bible, chants et médias…</div>';
+  searchBox.classList.add('open'); searchInput.setAttribute('aria-expanded','true');
+  try { const found = await searchAll(query); if (seq !== searchSeq) return; searchItems = found; drawSearch(); }
+  catch (e) { if (seq !== searchSeq) return; searchItems=[]; drawSearch(); console.warn('Recherche unifiée :',e); }
+}
+searchInput?.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer=setTimeout(refreshSearch,180); });
+searchInput?.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { hideSearch(); searchInput.blur(); return; }
+  if (e.key === 'ArrowDown' && searchItems.length) { e.preventDefault(); searchSelected=Math.min(searchItems.length-1,searchSelected+1); drawSearch(); }
+  else if (e.key === 'ArrowUp' && searchItems.length) { e.preventDefault(); searchSelected=Math.max(0,searchSelected-1); drawSearch(); }
+  else if (e.key === 'Enter' && searchItems.length) { e.preventDefault(); chooseSearch(searchItems[searchSelected]); }
+});
+searchBox?.addEventListener('click', e => { const b=e.target.closest('[data-search-index]'); if (b) chooseSearch(searchItems[Number(b.dataset.searchIndex)]); });
+document.addEventListener('click', e => { if (!e.target.closest('.unified-search')) hideSearch(); });
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='k') { e.preventDefault(); searchInput?.focus(); searchInput?.select(); }
+  else if (e.key==='/' && !e.ctrlKey && !e.metaKey && !e.altKey && !/INPUT|TEXTAREA|SELECT/.test(e.target?.tagName||'')) { e.preventDefault(); searchInput?.focus(); }
+});
 
 /* -------------------------------------------------------------- actions */
 const actions = {
@@ -88,8 +186,14 @@ document.addEventListener('keydown', e => {
 });
 // Le panneau des aperçus se replie pour laisser 100 % de la largeur à l'éditeur.
 $('#btn-panel').onclick = () => {
-  const off = document.body.classList.toggle('no-preview');
-  toast(off ? 'Aperçus masqués — plus de place pour l’édition' : 'Aperçus affichés');
+  const mobile = window.matchMedia?.('(max-width: 820px)').matches;
+  if (mobile) {
+    const shown = document.body.classList.toggle('show-mobile-preview');
+    toast(shown ? 'Aperçus ouverts sous l’éditeur' : 'Aperçus repliés — plus de place pour l’édition');
+  } else {
+    const off = document.body.classList.toggle('no-preview');
+    toast(off ? 'Aperçus masqués — plus de place pour l’édition' : 'Aperçus affichés');
+  }
   setTimeout(() => window.dispatchEvent(new Event('resize')), 60);
 };
 
@@ -171,8 +275,20 @@ function paintStatus(){
     bf.classList.toggle('on', !!store.folderMode);
     bf.textContent = store.folderMode ? '✓ Dossier actif' : '📂 Mode dossier';
   }
+  const liveState = store.state.live || {};
   const onair = $('#onair');
-  if (onair) { const b = store.state.live?.blackout; onair.textContent = b ? '■ NOIR' : '● EN DIRECT'; onair.style.opacity = b ? .55 : 1; }
+  if (onair) { const b = liveState.blackout; onair.textContent = b ? '■ NOIR' : '● EN DIRECT'; onair.style.opacity = b ? .55 : 1; }
+  for (const box of $$('.tool-control[data-control-tool]')) {
+    const tool = box.dataset.controlTool;
+    const lt = liveState.lowerthird;
+    const active = tool === 'lowerthird'
+      ? !!(lt && !lt.cut && (!lt.duration || Date.now() - (lt.startedAt || 0) < lt.duration * 1000))
+      : liveState.tool === tool && !!(liveState.fullscreen || liveState.lower || liveState.coeur);
+    box.classList.toggle('is-live', active);
+    box.setAttribute('aria-label', `${toolNames[tool]}${active?' à l’antenne':' hors antenne'}`);
+    const cut = $('[data-quick-cut]',box); if (cut) { cut.disabled=!active; cut.title=active?`Couper ${toolNames[tool]}`:`${toolNames[tool]} n’est pas à l’antenne`; }
+    const dot = $('.t-dot',box); if (dot) dot.setAttribute('aria-label',active?'En direct':'Hors antenne');
+  }
   const m = store.state.minuteur || {};
   const clock = $('#clock');
   if (clock) {

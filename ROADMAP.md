@@ -102,8 +102,9 @@ clic droit, loupe 1:1 sur les aperçus.
 | `tests/python.test.mjs` | ✅ 10/10 |
 | `tests/powershell.test.mjs` | ✅ 19/19 (syntaxe + régression fenêtre noire) |
 | `tests/ui.test.mjs` | ✅ 9/9 |
-| `tests/browser.test.mjs` | ✅ 12/12 (vrai Chromium) |
-| **TOTAL** | ✅ **171/171** |
+| `tests/quick-search.test.mjs` | ✅ 5/5 (Bible / chants / médias, zéro diffusion implicite) |
+| `tests/browser.test.mjs` | ✅ 14/14 (vrai Chromium, studio desktop/mobile) |
+| **TOTAL** | ✅ **178/178** |
 | Parcours réel Chromium headless | ✅ régie → plein + bas + Cœur, 0 erreur console |
 | Sécurité traversée de dossiers | ✅ `400` sur dossier inconnu, noms neutralisés (Node, Python, PowerShell) |
 
@@ -131,6 +132,22 @@ clic droit, loupe 1:1 sur les aperçus.
 | Bouton « ♥ Cœur seul » | ✅ | Envoie le Cœur sans toucher au plein écran ni au bas centré |
 
 ## H. Chantiers restants (optionnels, non bloquants)
+
+### ✅ v1.3 — interface Studio unifié inspirée d'OpenPresenter
+
+Reprise du langage d'interface et des actions du Studio Unifié d'OpenPresenter :
+rail d'outils, état direct par outil, recherche unifiée et commandes rapides.
+Adaptation à FREESTREAM : native, 8K, trois moniteurs (plein / bas / Cœur),
+preview séparée du direct, outils non reconstruits en iframes.
+
+Recherche locale Bible + chants + médias ; le résultat charge l'outil et
+l'aperçu, mais n'envoie jamais au direct sans validation. Les commandes Couper
+sont limitées au contenu de l'outil et ne détruisent pas le Cœur indépendant ni
+le calque Lowerthird. Sur mobile, les six aperçus sont repliés par défaut et
+accessibles avec le bouton dédié.
+
+Validation Chromium réel : 1600×900 et 390×844. 7 nouveaux tests (5 recherche +
+repli mobile + coupure sans perdre le Cœur), total 178/178.
 
 ### ✅ v1.2 — lanceur refait (méthode OpenPresenter) + `FREESTREAM.exe`
 

@@ -19,22 +19,40 @@
 </style></head>
 <body class="regie">
 <div id="app">
-  <div id="topbar">
-    <div class="logo">FREESTREAM<small>RÉGIE DE CULTE</small></div>
-    <div class="stat"><span class="dot" id="conn-dot"></span><span id="conn-txt">Connexion…</span></div>
-    <span class="live" id="onair">● EN DIRECT</span>
-    <span class="pill" id="cur-tool">—</span>
-    <div class="spacer"></div>
-    <span class="muted small" id="clock"></span>
-    <button class="btn blue" id="btn-folder" style="display:none" title="Fonctionner sans serveur, uniquement avec le dossier">📂 Mode dossier</button>
-    <button class="btn" id="btn-panel" title="Afficher / masquer le panneau des aperçus">◧ Aperçus</button>
-    <button class="btn" id="btn-max" title="Plein écran : toute la place pour la régie (F11)">⛶ Max</button>
-    <button class="btn" id="btn-undo" title="Ctrl+Z">↶ Retour</button>
-    <button class="btn" id="btn-preview-p" title="P">👁 Plein</button>
-    <button class="btn" id="btn-preview-b" title="L">👁 Bas</button>
-    <button class="btn danger" id="btn-black" title="B / Échap">■ Noir</button>
-    <a class="btn primary" href="index.html" target="_blank">🔌 Sorties</a>
-  </div>
+  <header id="topbar" class="studio-topbar">
+    <div class="top-main">
+      <a class="brandmark" href="regie.html" aria-label="FREESTREAM — accueil de la régie">
+        <span class="brand-icon">F</span><span class="brand-word">FREESTREAM<small>STUDIO DE CULTE</small></span>
+      </a>
+      <div class="stat"><span class="dot" id="conn-dot"></span><span id="conn-txt">Connexion…</span></div>
+      <span class="live" id="onair">● EN DIRECT</span>
+      <span class="pill current-tool" id="cur-tool">—</span>
+      <div class="unified-search" role="search">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <input id="global-search" type="search" autocomplete="off" spellcheck="false"
+          placeholder="Tout chercher : référence, chant, média…" aria-label="Recherche unifiée" aria-controls="global-search-results" aria-expanded="false">
+        <kbd class="search-shortcut">Ctrl K</kbd>
+        <div id="global-search-results" class="search-results" role="listbox" aria-label="Résultats de recherche"></div>
+      </div>
+      <span class="muted small top-clock" id="clock"></span>
+      <button class="btn top-icon" id="btn-folder" style="display:none" title="Mode dossier — sans serveur">📂</button>
+      <button class="btn top-icon" id="btn-panel" title="Afficher / masquer les aperçus">◧</button>
+      <button class="btn top-icon" id="btn-max" title="Plein écran (F11)">⛶</button>
+      <a class="btn primary top-links" href="index.html" target="_blank">Sorties OBS ↗</a>
+    </div>
+    <div class="top-tools" aria-label="Commandes rapides des outils">
+      <div class="tool-control" data-control-tool="bible"><span class="t-dot"></span><span class="t-label">Bible</span><button class="tool-open" data-quick-open="bible">Ouvrir</button><button class="tool-cut" data-quick-cut="bible">Couper</button></div>
+      <div class="tool-control" data-control-tool="chants"><span class="t-dot"></span><span class="t-label">Chants</span><button class="tool-open" data-quick-open="chants">Ouvrir</button><button class="tool-cut" data-quick-cut="chants">Couper</button></div>
+      <div class="tool-control" data-control-tool="medias"><span class="t-dot"></span><span class="t-label">Médias</span><button class="tool-open" data-quick-open="medias">Ouvrir</button><button class="tool-cut" data-quick-cut="medias">Couper</button></div>
+      <div class="tool-control" data-control-tool="lowerthird"><span class="t-dot"></span><span class="t-label">Lowerthird</span><button class="tool-open" data-quick-open="lowerthird">Ouvrir</button><button class="tool-cut" data-quick-cut="lowerthird">Couper</button></div>
+      <span class="tool-separator"></span>
+      <button class="btn xs" id="btn-undo" title="Annuler (Ctrl+Z)">↶ Retour</button>
+      <button class="btn xs" id="btn-preview-p" title="Mettre l’aperçu Plein en avant (P)">Plein</button>
+      <button class="btn xs" id="btn-preview-b" title="Mettre l’aperçu Bas en avant (L)">Bas</button>
+      <button class="btn xs danger" id="btn-black" title="Noir / rétablir (B)">■ Noir</button>
+      <span class="air-hint"><i></i> OBS</span>
+    </div>
+  </header>
 
   <nav id="nav">
     <button class="navbtn on" data-t="bible"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v3H6.5A2.5 2.5 0 0 1 4 20.5z"/><path d="M9 7h7M9 10h5"/></svg></span>Bible<span class="kbd">1</span></button>

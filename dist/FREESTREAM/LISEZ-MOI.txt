@@ -1,4 +1,4 @@
-﻿FREESTREAM 1.2.0 — RÉGIE DE CULTE HORS LIGNE
+﻿FREESTREAM 1.3.0 — RÉGIE DE CULTE HORS LIGNE
 =================================================
 
 *** VOUS AVEZ DEJA EU UNE FENETRE NOIRE QUI SE FERME ? LISEZ D'ABORD CECI ***
@@ -64,6 +64,12 @@
      • les LIENS OBS : http://localhost:8787/index.html
    Laissez la fenêtre/terminal serveur ouvert(e) pendant le culte.
    Un journal est écrit dans DEMARRAGE-LOG.txt en cas de problème.
+
+   Interface du Studio : recherche globale « Ctrl+K » (ou « / »), commandes
+   Ouvrir / Couper par outil, accents différents Bible/Chants/Médias/LT.
+   La recherche prépare le contenu mais ne l'envoie JAMAIS automatiquement
+   à OBS : validez vous-même ; les médias gardent bien leur règle des 2 clics.
+   Sur téléphone, le bouton ◧ ouvre/replie les six aperçus.
 
 2. DANS OBS
    Ouvrez la page des liens, copiez l'adresse de la sortie voulue, puis dans

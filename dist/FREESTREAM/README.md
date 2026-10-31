@@ -205,6 +205,37 @@ présents), et surtout exécution réelle de la même amorce en SEA sous Linux
 (`/api/health` → 200, `/regie.html` → 200). Le double-clic sur un vrai Windows
 reste à confirmer par l'utilisateur.
 
+### Interface Studio unifié inspirée d'OpenPresenter — sans sacrifier le direct
+
+La régie reprend les repères utiles de l'interface **Studio Unifié** d'OpenPresenter
+(rail d'outils, recherche unifiée, commandes et états directs par outil), adaptée
+aux vrais besoins de FREESTREAM : quatre outils de diffusion, trois sorties de
+monitoring (plein, bas, Cœur), prévisualisation distincte de l'antenne et moteur
+8K commun. Les outils existants restent natifs : pas d'iframes opaques ni de
+régression sur le rendu ni OBS.
+
+- **Barre supérieure** : état du serveur / antenne, outil courant, `Ctrl+K` ou `/`
+  pour chercher Bible, chants et médias dans une seule zone ; boutons de
+  raccourci « Ouvrir » et « Couper » par outil.
+- **Recherche de référence** : `Jean 3:16` charge le verset dans l'éditeur. La
+  recherche textuelle parcourt la version biblique locale sélectionnée et les
+  paroles locales ; les accents sont neutralisés pour faciliter la saisie.
+- **Garde-fou volontaire** : Entrée ouvre/prépare le résultat, mais **ne l'envoie
+  jamais à OBS automatiquement**. La Bible reste à valider par « Plein/Bas » ;
+  un chant met à jour l'aperçu de travail ; un média conserve son contrat
+  « premier clic = aperçu, deuxième clic = OBS ». C'est plus sûr que d'imposer
+  un affichage direct depuis la recherche.
+- **États visibles** : chaque outil s'allume lorsqu'il est à l'antenne ; « Couper »
+  est désactivé quand rien de cet outil n'est diffusé. Couper Bible/Média ne
+  retire jamais le Cœur ni le calque Lowerthird indépendant.
+- **Mobile** : rail horizontal ; panneau des six aperçus replié par défaut, ouvert
+  à la demande pour ne pas écraser les commandes.
+- Palette de l'atelier : indigo / ardoise avec accents par outil (Bible ambre,
+  Chants violet, Médias turquoise, Lowerthird indigo), proche d'OpenPresenter.
+
+L'implémentation a été testée dans Chromium aux résolutions **1600×900** et
+**390×844**, ainsi que dans la suite intégrale de sorties OBS.
+
 ### 3.4. `DEMARRER.bat` refait — méthode OpenPresenter
 
 Ancien défaut : le serveur partait dans une fenêtre *minimisée* (`start /min
@@ -416,7 +447,7 @@ console**.
 
 ```bash
 npm install                 # outils de test — le livrable n'en a PAS besoin
-npm test                    # TOUTES les suites (171 tests)
+npm test                    # TOUTES les suites (178 tests)
 node --test tests/unit.test.mjs
 node --test tests/render.test.mjs
 node --test tests/http.test.mjs
@@ -435,9 +466,10 @@ node --test tests/browser.test.mjs
 | `python.test.mjs` | **10/10** | Le serveur de repli Python : mêmes pages, patch, SSE, Range, CRUD, upload, duplication, sécurité |
 | `powershell.test.mjs` | **19/19** | Syntaxe PowerShell analysée par la grammaire WASM de VS Code, routes, sécurité, lanceurs `.bat`/`.sh`/`.command` |
 | `ui.test.mjs` | **9/9** | Montage réel des 9 modules jsdom : suggestions `es`, 4 sections, envoi, flèches, sous-onglets, 2 clics médias, lowerthird, designs, liens, orateur, raccourcis |
-| `browser.test.mjs` | **12/12** | **Vrai Chromium** : 0 erreur console, régie → plein + bas, plein figé pendant les 4 sections, **sortie Cœur collante**, **vignette média**, opacité OBS, transparence, liens |
+| `quick-search.test.mjs` | **5/5** | Recherche unifiée Bible (référence + plein texte), chants et médias, sans diffusion involontaire |
+| `browser.test.mjs` | **14/14** | **Vrai Chromium** : shell du studio sur desktop/mobile, recherche globale, aperçus mobiles repliables, Coupure sans toucher au Cœur/LT, 0 erreur console, régie → plein + bas, plein figé pendant les 4 sections, **sortie Cœur collante**, **vignette média**, opacité OBS, transparence, liens |
 
-**Total : 171 tests, 0 échec.**
+**Total : 178 tests, 0 échec.**
 
 **Isolation des tests** : les serveurs de test reçoivent `FREESTREAM_DATA_DIR`
 qui pointe vers un dossier temporaire. Les démos du projet y sont copiées, mais

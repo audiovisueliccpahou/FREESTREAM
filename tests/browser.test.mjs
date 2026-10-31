@@ -117,6 +117,28 @@ describe('Navigateur réel — régie', () => {
     assert.ok(await p.locator('#b-grid .vbtn').count() > 0, 'grille de versets rendue');
     assert.ok(await p.locator('#pv-work-plein .fs-text-layer').count() > 0, 'aperçu TRAVAIL initialisé');
     assert.ok(await p.locator('#pv-work-bas .fs-text-layer').count() > 0, 'aperçu bas centré initialisé');
+    assert.ok(await p.locator('#global-search').count(), 'recherche globale du studio présente');
+    assert.equal(await p.locator('.tool-control[data-control-tool]').count(), 4, 'commandes rapides pour les 4 outils principaux');
+    assert.ok(await p.locator('[data-quick-open="bible"]').count(), 'raccourci d’ouverture Bible');
+    assert.ok(await p.locator('[data-quick-cut="lowerthird"]').isDisabled(), 'Couper est désactivé si rien n’est à l’antenne');
+
+    // Recherche unifiée inspirée du studio OpenPresenter, mais elle PRÉPARE le
+    // résultat sans le diffuser : l’utilisateur garde la maîtrise du direct.
+    await p.fill('#global-search', 'Jean 3:16');
+    await p.waitForSelector('.search-item');
+    assert.ok((await p.locator('.search-item').first().textContent()).includes('Jean 3:16'));
+    await p.keyboard.press('Enter');
+    await p.waitForFunction(() => document.querySelector('#b-ref')?.textContent === 'Jean 3:16');
+    assert.equal((await (await p.request.get(BASE + '/api/state')).json()).live?.tool || null, null,
+      'la recherche charge la Bible dans le studio mais n’envoie rien à OBS');
+
+    await p.fill('#global-search', 'démonstration');
+    await p.waitForSelector('.search-item');
+    const chantResult = p.locator('.search-item').filter({ hasText: 'Chant de démonstration' }).first();
+    assert.ok(await chantResult.count(), 'un chant est trouvable par une partie de son titre/paroles');
+    await chantResult.click();
+    await p.waitForSelector('#ch-list .list-item.sel');
+    assert.ok(await p.locator('#global-search').inputValue() === '', 'la recherche se réinitialise après sélection');
     assert.deepEqual(errors, [], 'aucune erreur console : ' + errors.join(' | '));
     await p.close();
   });
@@ -139,6 +161,49 @@ describe('Navigateur réel — régie', () => {
     await p.waitForTimeout(200);
     assert.ok(!(await p.evaluate(() => document.body.classList.contains('ui-max'))), 'retour affichage normal');
     await p.close();
+  });
+
+  test('les raccourcis Couper respectent le Cœur et le lowerthird indépendant', async (ctx) => {
+    if (!browser) return ctx.skip('navigateur indisponible : ' + skipReason);
+    await fetch(BASE+'/api/patch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patch:{live:{
+      tool:'bible',blackout:false,
+      fullscreen:{tool:'bible',key:'quick-cut-test',designId:'bible:plein',vars:{reference:'Jean 3:16',content:'Test'}},
+      lower:null,
+      coeur:{tool:'chants',key:'coeur-safe',designId:'chants:coeur',vars:{title:'Cœur à garder',content:'Chant'}},
+      lowerthird:{id:'lt-safe',title:'Annonce à garder',startedAt:Date.now(),duration:0,cut:false},
+    }}})});
+    const p=await browser.newPage({viewport:{width:1600,height:900}});
+    await p.goto(BASE+'/regie.html',{waitUntil:'domcontentloaded'}); await p.waitForTimeout(1200);
+    const bibleCut=p.locator('[data-quick-cut="bible"]');
+    assert.equal(await bibleCut.isDisabled(),false,'Couper Bible actif');
+    await bibleCut.click(); await p.waitForTimeout(250);
+    let state=await (await p.request.get(BASE+'/api/state')).json();
+    assert.equal(state.live.fullscreen,null,'Bible coupée');
+    assert.equal(state.live.coeur?.key,'coeur-safe','le bus Cœur reste affiché');
+    assert.equal(state.live.lowerthird?.cut,false,'le lowerthird reste indépendant');
+    const ltCut=p.locator('[data-quick-cut="lowerthird"]');
+    assert.equal(await ltCut.isDisabled(),false,'Couper lowerthird actif');
+    await ltCut.click(); await p.waitForTimeout(200);
+    state=await (await p.request.get(BASE+'/api/state')).json();
+    assert.equal(state.live.lowerthird?.cut,true,'le bouton coupe bien le calque inférieur');
+    assert.equal(state.live.coeur?.key,'coeur-safe','le Cœur survit aussi à la coupure LT');
+    await p.close();
+  });
+
+  test('interface mobile : aperçus repliés par défaut et ouvrables à la demande', async (ctx) => { if (!browser) return ctx.skip('navigateur indisponible : ' + skipReason);
+    const p = await browser.newPage({ viewport:{width:390,height:844} });
+    const errors=[]; p.on('pageerror',e=>errors.push(e.message));
+    await p.goto(BASE+'/regie.html',{waitUntil:'domcontentloaded'}); await p.waitForTimeout(1400);
+    assert.equal(await p.locator('#side').evaluate(e=>getComputedStyle(e).display),'none','les aperçus ne doivent pas écraser l’éditeur sur téléphone');
+    assert.equal(await p.locator('#global-search').isVisible(),true,'recherche globale accessible');
+    assert.equal(await p.locator('#nav').isVisible(),true,'navigation horizontale visible');
+    assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth),390,'pas de débordement horizontal');
+    await p.click('#btn-panel');
+    assert.equal(await p.locator('#side').evaluate(e=>getComputedStyle(e).display),'flex','aperçus ouvrables avec le bouton ◧');
+    assert.equal(await p.locator('#side .pv').count(),6,'les six aperçus restent présents');
+    await p.click('#btn-panel');
+    assert.equal(await p.locator('#side').evaluate(e=>getComputedStyle(e).display),'none','aperçus repliables');
+    assert.deepEqual(errors,[],'aucune erreur console mobile'); await p.close();
   });
 
   test('les aperçus TRAVAIL affichent le texte et sont synchronisés', async (ctx) => { if (!browser) return ctx.skip('navigateur indisponible : ' + skipReason);

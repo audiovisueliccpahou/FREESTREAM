@@ -47,7 +47,8 @@ export async function mount(container) {
   $('#m-clear',host).onclick = () => clearOutput('both');
   $('#m-vig',host).onchange = e => { applyMediaLook(e.target.checked, $('#m-cover',host)?.checked); };
   $('#m-cover',host).onchange = e => { applyMediaLook($('#m-vig',host)?.checked, e.target.checked); };
-  await reload(); paintList(); paintCtrl();
+  await reload(); paintList();
+  if (sel) paintPlayer(); else paintCtrl();
   return { onKey, destroy: () => clearInterval(tick) };
 }
 
@@ -58,6 +59,11 @@ async function reload() {
     ...files.map(f => ({ id:'f:'+f.name, name:f.name, src:'/media/'+encodeURIComponent(f.name), kind:mediaKind(f.name), size:f.size, local:true })),
     ...links.map(l => ({ id:'l:'+l.id, name:l.name, src:l.url, kind:normalizeMediaUrl(l.url).kind, youtube:!!youtubeId(l.url), link:true })),
   ];
+  const requestedId = store.state.medias?.previewId;
+  if (requestedId) {
+    sel = items.find(x=>x.id===requestedId) || null;
+    previewId = sel?.id || null;
+  }
 }
 
 function paintList() {
@@ -95,7 +101,7 @@ function paintList() {
       if (previewId===id) previewId=null; await reload(); paintList(); return; }
     const d = e.target.closest('[data-id]'); if (!d) return;
     const id2 = d.dataset.id;
-    if (previewId !== id2) { previewId = id2; sel = items.find(x=>x.id===id2); paintList(); paintPlayer(); toast('Aperçu chargé — cliquez une 2ᵉ fois pour envoyer à OBS'); }
+    if (previewId !== id2) { previewId = id2; sel = items.find(x=>x.id===id2); store.patch({medias:{previewId:id2}}); paintList(); paintPlayer(); toast('Aperçu chargé — cliquez une 2ᵉ fois pour envoyer à OBS'); }
     else { sel = items.find(x=>x.id===id2); send('plein'); paintList(); }
   };
 }

@@ -34,7 +34,9 @@ async function reload() {
     await store.save('chants', 'chant-demo.json', demo);
     songs = [{ ...demo, _file:'chant-demo.json' }];
   }
-  if (!sel || !songs.find(s=>s.id===sel.id)) sel = songs[0] || null;
+  const requested = songs.find(s=>s.id===store.state.chants?.currentId);
+  if (requested) sel = requested;
+  else if (!sel || !songs.find(s=>s.id===sel.id)) sel = songs[0] || null;
 }
 
 function keyOf(song, idx) { return `${song?.id}|${idx}`; }
@@ -86,7 +88,9 @@ function renderListe(box) {
       const n={...structuredClone(s),id:'song-'+Date.now().toString(36),title:s.title+' (copie)',createdAt:Date.now(),updatedAt:Date.now()};
       delete n._file; await persist(n); await reload(); render(); toast('Chant dupliqué','ok'); return; }
     const d = e.target.closest('[data-id]'); if (!d) return;
-    sel = songs.find(x=>x.id===d.dataset.id)||null; slideIdx=0; paint();
+    sel = songs.find(x=>x.id===d.dataset.id)||null; slideIdx=0;
+    if (sel) store.patch({chants:{currentId:sel.id,chunkIndex:0,sectionIndex:0}});
+    paint();
   };
   const open = $('#ch-open',box); if (open) open.onclick = () => { sub='editeur'; $$('#ch-sub .subtab',host).forEach(x=>x.classList.toggle('on',x.dataset.s==='editeur')); render(); };
   const proj = $('#ch-proj',box); if (proj) proj.onclick = () => { sub='projection'; $$('#ch-sub .subtab',host).forEach(x=>x.classList.toggle('on',x.dataset.s==='projection')); render(); };
